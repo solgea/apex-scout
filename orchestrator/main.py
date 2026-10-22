@@ -12,6 +12,7 @@ from config.constants import DecisionAction, OrderSide, PositionStatus
 from config.settings import settings
 from decision.blacklist import BlacklistManager
 from decision.engine import DecisionEngine
+from decision.models import DecisionResult
 from scanner.dexscreener import DexScreenerScanner
 from scanner.filters import TokenFilter
 from scanner.models import TokenData, TokenFilterCriteria
@@ -19,7 +20,6 @@ from scanner.pumpfunt import PumpFunScanner
 from shared.database import get_session, init_db
 from shared.logger import get_logger
 from shared.models import Decision, SystemMetrics, Token
-from decision.models import DecisionResult
 from trading.okx_client import OKXDemoClient
 from trading.order_executor import OrderExecutor
 from trading.portfolio import PortfolioManager
