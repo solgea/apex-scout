@@ -1,0 +1,39 @@
+# Apex Scout - Solana Token Scanner & Trading System
+# Core dependencies
+requests>=2.31.0
+aiohttp>=3.9.0
+websockets>=12.0
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Data processing
+pandas>=2.1.0
+numpy>=1.24.0
+
+# OKX API
+okx-api>=1.0.0
+
+# Dashboard
+streamlit>=1.29.0
+plotly>=5.17.0
+
+# Database
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+
+# Utilities
+loguru>=0.7.0
+tenacity>=8.2.0
+schedule>=1.2.0
+python-dateutil>=2.8.2
+tqdm>=4.66.0
+psutil>=5.9.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.12.0
+
+# Type hints
+typing-extensions>=4.8.0
