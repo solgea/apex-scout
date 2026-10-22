@@ -135,8 +135,9 @@ class HealthMonitor:
     async def _check_database(self) -> tuple[bool, str]:
         """Veritabanı bağlantısı"""
         try:
+            from sqlalchemy import text
             with get_session() as session:
-                session.execute("SELECT 1")
+                session.execute(text("SELECT 1"))
             return True, "Database connection OK"
         except Exception as e:
             return False, f"Database connection failed: {e}"
