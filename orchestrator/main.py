@@ -131,6 +131,9 @@ class Orchestrator:
         # Portföy başlat
         await self._portfolio.initialize()
 
+        # OKX instrument listesini yükle (hangi token'lar trade edilebilir)
+        await self._okx_client.refresh_instruments()
+
         # Pump.fun WebSocket başlat (opsiyonel)
         # await self._pump_scanner.start_websocket(self._on_new_pumpfunt_token)
 
@@ -369,8 +372,12 @@ class Orchestrator:
 
                 # Portföy risk kontrolü
                 token = decision.token
-                # Token için OKX instrument ID
-                inst_id = self._okx_client.format_inst_id(token.symbol)
+
+                # OKX'te listelenmiş mi kontrol et (listelenmemişse işlem yapılamaz)
+                inst_id = await self._okx_client.find_instrument(token.symbol)
+                if not inst_id:
+                    log.debug(f"[Trade] {token.symbol} not listed on OKX, skipping")
+                    continue
 
                 # Fiyat al
                 try:

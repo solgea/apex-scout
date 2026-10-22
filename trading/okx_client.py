@@ -50,6 +50,10 @@ class OKXDemoClient:
         self._rate_limit_remaining = 100
         self._rate_limit_reset = 0
 
+        # Instrument cache (hangi token'lar OKX'te listelenmiş)
+        self._instrument_cache: set = set()
+        self._instrument_cache_time: float = 0.0
+
         # Demo mode header - HER ZAMAN GÖNDERİLMELİ
         self.demo_header = {OKX_DEMO_HEADER: OKX_DEMO_VALUE}
 
@@ -232,6 +236,65 @@ class OKXDemoClient:
         """Anlık fiyat"""
         ticker = await self.get_ticker(inst_id)
         return float(ticker.get("last", "0"))
+
+    # ============ INSTRUMENT CACHE ============
+
+    async def refresh_instruments(self, inst_type: str = "SPOT") -> int:
+        """
+        OKX instrument listesini çek ve cache'le.
+        Sadece listelenmiş token'lar ile işlem yapabilmek için gerekli.
+        """
+        try:
+            instruments = await self.get_instruments(inst_type)
+            self._instrument_cache = {
+                i.get("instId") for i in instruments if i.get("state") == "live"
+            }
+            self._instrument_cache_time = time.time()
+            log.info(f"[OKX] Instrument cache updated: {len(self._instrument_cache)} live {inst_type} pairs")
+            return len(self._instrument_cache)
+        except Exception as e:
+            log.error(f"[OKX] Instrument cache refresh failed: {e}")
+            return 0
+
+    def is_instrument_listed(self, inst_id: str) -> bool:
+        """
+        Instrument OKX'te listelenmiş mi?
+        Cache boşsa True döner (API'ye sor).
+        """
+        if not self._instrument_cache:
+            return True  # Cache yoksa kontrol etme
+        return inst_id in self._instrument_cache
+
+    async def ensure_instrument_cache(self, max_age: float = 3600.0):
+        """Instrument cache'in taze olduğundan emin ol"""
+        now = time.time()
+        if not self._instrument_cache or (now - self._instrument_cache_time) > max_age:
+            await self.refresh_instruments()
+
+    async def find_instrument(self, symbol: str) -> Optional[str]:
+        """
+        Sembol için OKX instrument ID bul.
+        Token'ın gerçek adı farklı olabilir, bu yüzden cache'de arama yapılır.
+        """
+        await self.ensure_instrument_cache()
+
+        normalized = symbol.upper().strip()
+        candidates = [
+            f"{normalized}-USDT",
+            f"{normalized}-USDC",
+            f"{normalized}-USD",
+        ]
+
+        for c in candidates:
+            if c in self._instrument_cache:
+                return c
+
+        # Sembol içinde geçen eşleşme (örn: "1000PEPE" -> "1000PEPE-USDT")
+        for inst_id in self._instrument_cache:
+            if inst_id.startswith(normalized + "-"):
+                return inst_id
+
+        return None
 
     async def get_candles(self, inst_id: str, bar: str = "1m", limit: int = 100) -> List[List]:
         """Mum verileri (OHLCV)"""

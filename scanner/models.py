@@ -89,10 +89,14 @@ class TokenFilterCriteria(BaseModel):
         if token.volume_24h < self.min_volume_24h:
             reasons.append(f"Hacim çok düşük: ${token.volume_24h:,.0f} < ${self.min_volume_24h:,.0f}")
 
-        if token.holder_count < self.min_holder_count:
+        # Holder sayısı kontrolü
+        # NOT: holder_count == 0 => "bilgi yok" (DexScreener holder vermez)
+        # Bilgi yoksa token elenmez, sadece skorlama etkilenır.
+        if token.holder_count > 0 and token.holder_count < self.min_holder_count:
             reasons.append(f"Holder sayısı az: {token.holder_count} < {self.min_holder_count}")
 
-        if token.top_10_holder_pct > self.max_top_10_holder_pct:
+        # Top 10 holder dağılımı - 0 => bilgi yok, kontrol edilmez
+        if token.top_10_holder_pct > 0 and token.top_10_holder_pct > self.max_top_10_holder_pct:
             reasons.append(f"Top 10 holder çok yoğun: %{token.top_10_holder_pct:.1f} > %{self.max_top_10_holder_pct:.1f}")
 
         if self.require_mint_renounced and not token.mint_renounced:
