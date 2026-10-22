@@ -42,6 +42,25 @@ jobs:
           pip install -r requirements.txt
           pip install black ruff mypy
 
+      - name: Create test .env
+        run: |
+          cat > .env <<'EOF'
+          OKX_API_KEY=test_key
+          OKX_API_SECRET=test_secret
+          OKX_PASSPHRASE=test_passphrase
+          OKX_DEMO_TRADING=true
+          MIN_LIQUIDITY_USD=5000
+          MAX_TOKEN_AGE_HOURS=2
+          MIN_SCORE_TO_TRADE=70
+          MAX_OPEN_POSITIONS=4
+          MAX_PORTFOLIO_RISK_PCT=35
+          POSITION_SIZE_PCT=10
+          STOP_LOSS_PCT=15
+          TRAILING_STOP_PCT=10
+          LOG_LEVEL=INFO
+          DB_URL=sqlite:///data/apex_scout.db
+          EOF
+
       - name: Run Black (format check)
         run: black --check --diff .
 
