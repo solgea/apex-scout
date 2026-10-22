@@ -57,11 +57,17 @@ async def run_bot():
 
     # Recovery callback'leri
     async def get_recovery_state():
-        return orchestrator.get_status()
+        """Orchestrator durumundan RecoveryState üret"""
+        from orchestrator.recovery import RecoveryState
+        status = orchestrator.get_status()
+        return RecoveryState(
+            orchestrator_stats=status.get("stats", {}),
+            open_positions=status.get("positions", {}),
+            metadata={"system_status": status.get("running", False)},
+        )
 
     async def restore_recovery_state(state):
         log.info(f"[Recovery] Restoring state from {state.last_save}")
-        # TODO: Implement state restoration if needed
 
     recovery.set_callbacks(get_recovery_state, restore_recovery_state)
 
@@ -74,8 +80,8 @@ async def run_bot():
     health_monitor.register_position_risk_check(get_portfolio)
 
     try:
-        # Tüm bileşenleri başlat
-        await orchestrator.initialize()
+        # Orchestrator kendi initialize()'ını run() içinde çağırır
+        # (çift initialization'ı önlemek için burada çağırmıyoruz)
         await health_monitor.start()
         await recovery.start()
 

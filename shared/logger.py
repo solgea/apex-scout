@@ -9,11 +9,26 @@ from loguru import logger
 from config.settings import settings
 
 
+def _safe_console_sink(message: str):
+    """
+    Windows konsolunda emoji/unicode karakterler hata verir (cp1254).
+    Güvenli şekilde yaz, desteklenmeyen karakterleri '?' ile değiştir.
+    """
+    try:
+        sys.stdout.write(message)
+        sys.stdout.flush()
+    except UnicodeEncodeError:
+        encoding = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
+        safe = message.encode(encoding, errors="replace").decode(encoding, errors="replace")
+        sys.stdout.write(safe)
+        sys.stdout.flush()
+
+
 def setup_logger() -> None:
     """
     Loguru logger'ını yapılandırır.
-    - Konsola: Renkli, formatlı
-    - Dosyaya: JSON formatında, rotasyonlu, retentionlı
+    - Konsola: Renkli, formatlı (Windows için encoding-safe)
+    - Dosyaya: Rotasyonlu, retentionlı
     """
     # Varsayılan handler'ı kaldır
     logger.remove()
@@ -22,9 +37,9 @@ def setup_logger() -> None:
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
 
-    # Konsol handler - renkli ve okunabilir
+    # Konsol handler - renkli ve okunabilir (encoding-safe)
     logger.add(
-        sys.stdout,
+        _safe_console_sink,
         level=settings.log_level,
         format=(
             "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
