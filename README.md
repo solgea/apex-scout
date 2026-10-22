@@ -145,7 +145,63 @@ TRAILING_STOP_PCT=10
 python main.py --init-db
 ```
 
-## 🏃 Çalıştırma
+## 🐳 Docker Compose (Önerilen)
+
+Bot + Dashboard tek komutla ayağa kalkar. Ortak volume üzerinden **aynı SQLite DB'yi** paylaşırlar (WAL modu ile eşzamanlı erişim).
+
+```bash
+# 1. .env dosyasını hazırla (OKX Demo credentials)
+cp .env.example .env
+notepad .env
+
+# 2. Build + Başlat
+docker compose up -d --build
+
+# 3. Dashboard
+# http://localhost:8501
+
+# 4. Logları izle
+docker compose logs -f bot
+docker compose logs -f dashboard
+
+# 5. Durdur
+docker compose down
+
+# 6. Verilerle birlikte tamamen temizle
+docker compose down -v
+```
+
+### Servisler
+
+| Servis | Açıklama | Port |
+|--------|----------|------|
+| `bot` | Scanner + Decision + Trading | - |
+| `dashboard` | Streamlit arayüz | 8501 |
+
+### Volume'lar
+
+| Volume | İçerik |
+|--------|--------|
+| `apex_scout_data` | SQLite DB + recovery state (kalıcı) |
+| `apex_scout_logs` | Log dosyaları (rotasyonlu) |
+
+### Testleri Container'da Çalıştırma
+```bash
+docker compose run --rm tests
+```
+
+### Docker Komutları
+```bash
+docker compose ps                  # Durum
+docker compose restart bot         # Bot'u yeniden başlat
+docker compose logs -f --tail=100 bot
+docker compose exec bot python main.py --test-config
+docker compose down -v && docker compose up -d --build   # Sıfırdan kur
+```
+
+---
+
+## 🏃 Çalıştırma (Manuel / Lokal)
 
 ### Bot Modu (Tarama + Trading)
 ```bash

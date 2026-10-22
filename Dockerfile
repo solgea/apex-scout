@@ -1,32 +1,39 @@
-# Apex Scout - Docker Image
+# Apex Scout - Production Dockerfile
+# Tek image, compose ile bot + dashboard servisleri aynı image'ı kullanır.
 FROM python:3.11-slim
+
+# Environment
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    TZ=UTC
 
 WORKDIR /app
 
-# System deps
+# System dependencies
+# curl: healthcheck için gerekli
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
+        curl \
+        tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-# Python deps
+# Python dependencies (cache layer)
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# App code
+# Uygulama kodu
 COPY . .
 
-# Non-root user
-RUN useradd -m -u 1000 apex && chown -R apex:apex /app
+# Veri/log dizinleri (non-root kullanıcıya ait)
+RUN mkdir -p /app/data /app/logs /app/data/recovery && \
+    useradd -m -u 1000 apex && \
+    chown -R apex:apex /app
+
 USER apex
 
-# Ports
+# Expose
 EXPOSE 8501
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8501/_stcore/health || exit 1
-
-# Default command (bot mode)
+# Default: bot modu (compose dashboard servisi override eder)
 CMD ["python", "main.py"]

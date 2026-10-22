@@ -219,6 +219,8 @@ class HealthMonitor:
         async def check():
             try:
                 client = client_getter()
+                if client is None:
+                    return True, f"{name} client not initialized yet (skipping)"
                 if hasattr(client, 'health_check'):
                     healthy = await client.health_check()
                     return healthy, f"{name} API {'OK' if healthy else 'FAILED'}"
@@ -233,6 +235,10 @@ class HealthMonitor:
         async def check():
             try:
                 portfolio = await portfolio_getter()
+                # Orchestrator henüz initialize olmadıysa atla
+                if portfolio is None:
+                    return True, "Portfolio not ready yet (skipping check)"
+
                 risk_pct = portfolio.risk_exposure_pct
                 max_risk = settings.max_portfolio_risk_pct
 

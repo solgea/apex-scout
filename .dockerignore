@@ -1,0 +1,44 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Environment (güvenlik - asla image'e gömülmesin)
+.env
+.env.local
+.env.*.local
+
+# Data & Logs
+data/
+logs/
+*.db
+*.sqlite
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore

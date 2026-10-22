@@ -69,7 +69,7 @@ class TestScoringCriteria:
     def test_score_mint_freeze(self, criteria, sample_token):
         """Mint/Freeze skoru"""
         # sample_token'da mint_authority ve freeze_authority None olduğu için
-        # kod 30.0 (bilgi yok = orta risk) döndürür
+        # kod nötr (50.0) döndürür
         # Test token'ını düzgün ayarla
         sample_token.mint_authority = ""
         sample_token.freeze_authority = ""
@@ -77,6 +77,58 @@ class TestScoringCriteria:
         sample_token.freeze_renounced = True
         score = criteria._score_mint_freeze(sample_token)
         assert score == 100.0  # Her ikisi de renounced
+
+    def test_score_mint_freeze_unknown_is_neutral(self, criteria):
+        """Mint/Freeze bilgisi yoksa nötr (50) puan - 0 değil"""
+        token = TokenData(
+            address="So11111111111111111111111111111111111111112",
+            name="Unknown",
+            symbol="UNK",
+            mint_authority=None,
+            freeze_authority=None,
+            source=TokenSource.DEXSCREENER,
+        )
+        score = criteria._score_mint_freeze(token)
+        assert score == 50.0, "Bilinmiyor bilgi tehlikeli gibi puanlanmamalı"
+
+    def test_score_mint_freeze_pumpfun_assumed_renounced(self, criteria):
+        """Pump.fun token'larında 80 (genelde renounced)"""
+        token = TokenData(
+            address="So11111111111111111111111111111111111111112",
+            name="Pump",
+            symbol="PUMP",
+            mint_authority=None,
+            freeze_authority=None,
+            source=TokenSource.PUMPFUN,
+        )
+        score = criteria._score_mint_freeze(token)
+        assert score == 80.0
+
+    def test_score_volume_unknown_is_neutral(self, criteria):
+        """Hacim bilgisi yoksa (Pump.fun) nötr (50) puan - 0 değil"""
+        token = TokenData(
+            address="So11111111111111111111111111111111111111112",
+            name="NoVol",
+            symbol="NOVOL",
+            liquidity_usd=50000,
+            volume_24h=0,  # bilgi yok
+            source=TokenSource.PUMPFUN,
+        )
+        score = criteria._score_volume(token)
+        assert score == 50.0, "Hacim bilgisi yoksa token haksız yere elenmemeli"
+
+    def test_score_volume_real_low_is_zero(self, criteria):
+        """Gerçek düşük hacim 0 puan alır (bilgi yok ile karıştırılmamalı)"""
+        token = TokenData(
+            address="So11111111111111111111111111111111111111112",
+            name="LowVol",
+            symbol="LOWVOL",
+            liquidity_usd=100000,
+            volume_24h=1000,  # ratio = 0.01 -> gerçek düşük
+            source=TokenSource.DEXSCREENER,
+        )
+        score = criteria._score_volume(token)
+        assert score == 0.0
 
     def test_score_mint_freeze_not_renounced(self, criteria):
         """Mint/Freeze renounced değil"""

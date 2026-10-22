@@ -176,8 +176,12 @@ class DecisionEngine:
         """
         PASS skoru alsa bile engelleyen kritik sorunlar.
         Returns: Boş liste = sorun yok, dolu = SKIP nedenleri
+
+        NOT: "bilgi yok" değerleri (0) kritik sayılmaz.
+        Pump.fun hacim/holder bilgisi vermez, DexScreener da vermez.
         """
         issues = []
+        from config.constants import TokenSource
 
         # Likidite minimum altındaysa (config'de zaten filtrelenmeli ama double-check)
         if token.liquidity_usd < settings.min_liquidity_usd:
@@ -188,12 +192,13 @@ class DecisionEngine:
         if age_hours > settings.max_token_age_hours:
             issues.append(f"Kritik: Token yaşı limit aşıldı ({age_hours:.1f}h)")
 
-        # Hacim minimum altındaysa
-        if token.volume_24h < settings.min_volume_24h:
+        # Hacim minimum altındaysa - ANCAK hacim bilgisi varsa
+        if token.volume_24h > 0 and token.volume_24h < settings.min_volume_24h:
             issues.append(f"Kritik: Hacim minimumun altındaydı (${token.volume_24h:,.0f})")
 
         # Mint/Freeze her ikisi de aktif ve renounced değilse
         if not token.mint_renounced and not token.freeze_renounced:
+            # Sadece bilgi varsa kritik say (bilgi yoksa nötr)
             if token.mint_authority or token.freeze_authority:
                 issues.append("Kritik: Hem mint hem freeze yetkisi aktif")
 

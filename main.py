@@ -75,7 +75,11 @@ async def run_bot():
     health_monitor.register_api_check("okx", lambda: orchestrator._okx_client)
 
     async def get_portfolio():
-        return await orchestrator._portfolio.get_snapshot()
+        """Portföy snapshot - orchestrator henüz initialize olmadıysa None döner"""
+        portfolio = getattr(orchestrator, "_portfolio", None)
+        if portfolio is None:
+            return None
+        return await portfolio.get_snapshot()
 
     health_monitor.register_position_risk_check(get_portfolio)
 

@@ -31,11 +31,17 @@ def create_db_engine():
             echo=False,  # True yaparsanız SQL logları görürsünüz
         )
 
-        # SQLite foreign key constraint'lerini aktif et
+        # SQLite pragmaları - WAL modu eşzamanlı erişim (bot + dashboard) için şart
         @event.listens_for(engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
+            # WAL: eşzamanlı okuma + yazma (dashboard bot DB'sini okurken bot yazar)
+            cursor.execute("PRAGMA journal_mode=WAL")
+            # Busy timeout: lock çakışmasında bekle (5 saniye)
+            cursor.execute("PRAGMA busy_timeout=5000")
+            # Senkron: normal (NORMAL WAL ile daha hızlı, güvenli yeterli)
+            cursor.execute("PRAGMA synchronous=NORMAL")
             cursor.close()
     else:
         # PostgreSQL, MySQL vb. için

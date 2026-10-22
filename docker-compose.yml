@@ -1,0 +1,109 @@
+# Apex Scout - Docker Compose
+# Bot + Dashboard tek komutla: docker compose up -d
+#
+# Kullanım:
+#   1) .env dosyasını doldurun (OKX Demo credentials)
+#   2) docker compose up -d --build
+#   3) Dashboard: http://localhost:8501
+#   4) Loglar: docker compose logs -f bot
+#
+# Durdurma:  docker compose down
+# Temizleme: docker compose down -v   (veriler de silinir)
+
+name: apex-scout
+
+services:
+  # ============ SCANNER + TRADING BOT ============
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apex-scout-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Container içi path'ler
+      DB_URL: sqlite:////app/data/apex_scout.db
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PYTHONPATH: /app
+    volumes:
+      # Ortak veri volume'ü (dashboard da aynısını kullanır)
+      - apex_data:/app/data
+      - apex_logs:/app/logs
+    command: ["python", "main.py"]
+    healthcheck:
+      # Bot için DB erişilebilirliğini kontrol et
+      test: ["CMD", "python", "-c", "import sqlite3,os,sys; db=os.environ.get('DB_URL','').replace('sqlite:///',''); sys.exit(0 if os.path.exists(db) else 1)"]
+      interval: 60s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 30s
+
+  # ============ DASHBOARD ============
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apex-scout-dashboard
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_URL: sqlite:////app/data/apex_scout.db
+      DASHBOARD_HOST: 0.0.0.0
+      DASHBOARD_PORT: 8501
+      PYTHONPATH: /app
+    volumes:
+      # AYNI volume -> bot ile aynı DB'yi görür
+      - apex_data:/app/data
+      - apex_logs:/app/logs
+    ports:
+      - "${DASHBOARD_PORT:-8501}:8501"
+    command:
+      - streamlit
+      - run
+      - dashboard/app.py
+      - --server.port=8501
+      - --server.address=0.0.0.0
+      - --server.headless=true
+      - --browser.gatherUsageStats=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============ (OPSIYONEL) ONE-SHOT TEST RUNNER ============
+  # docker compose run --rm tests
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apex-scout-tests
+    profiles: ["test"]
+    env_file:
+      - .env
+    environment:
+      DB_URL: sqlite:////tmp/test.db
+      PYTHONPATH: /app
+    command: ["pytest", "tests/", "-v", "--tb=short"]
+
+# ============ VOLUMES ============
+volumes:
+  apex_data:
+    name: apex_scout_data
+  apex_logs:
+    name: apex_scout_logs

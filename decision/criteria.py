@@ -77,9 +77,16 @@ class ScoringCriteria:
         - 1.0: 40
         - 2.0: 70
         - 5.0+: 100
+
+        NOT: volume_24h == 0 => "bilgi yok" (Pump.fun hacim vermez).
+        Bilgi yok 0 puan DEĞİLDİR - nötr (50) puan verilir.
         """
         if token.liquidity_usd <= 0:
             return 0.0
+
+        # Hacim bilgisi yok -> nötr skor (token'lar haksız yere elenmesin)
+        if token.volume_24h <= 0:
+            return 50.0
 
         vol_liq_ratio = token.volume_24h / token.liquidity_usd
 
@@ -164,7 +171,7 @@ class ScoringCriteria:
         - Sadece mint renounced: 70
         - Sadece freeze renounced: 50
         - Hiçbiri: 0
-        - Bilgi yok: 30 (varsayılan risk)
+        - Bilgi yok: 50 (nötr - bilinmiyor ≠ tehlikeli)
         """
         mint_renounced = token.mint_renounced
         freeze_renounced = token.freeze_renounced
@@ -174,7 +181,8 @@ class ScoringCriteria:
             # Pump.fun token'lar genelde renounced
             if token.source.value == "pumpfun":
                 return 80.0
-            return 30.0
+            # DexScreener holder/mint bilgisi vermez -> nötr skor
+            return 50.0
 
         if mint_renounced and freeze_renounced:
             return 100.0
