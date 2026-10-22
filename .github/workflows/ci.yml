@@ -20,21 +20,32 @@ env:
   PYTHON_VERSION: "3.11"
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  PIP_CACHE_DIR: ~/.cache/pip
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-and-test:
     name: Lint & Test
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.skip_docker != 'true' || github.event_name != 'workflow_dispatch' }}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
           cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
 
       - name: Install dependencies
         run: |
@@ -72,7 +83,15 @@ jobs:
         run: mypy --ignore-missing-imports config scanner decision trading orchestrator shared
 
       - name: Run Tests
-        run: pytest tests/ -v --tb=short
+        run: pytest tests/ -v --tb=short --junitxml=test-results-${{ matrix.python-version }}.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: test-results-${{ matrix.python-version }}.xml
+          retention-days: 7
 
   integration-test:
     name: Integration Test (OKX Demo)
@@ -88,6 +107,9 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
 
       - name: Install dependencies
         run: |
