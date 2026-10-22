@@ -23,6 +23,7 @@ htmlcov/
 # Data & Logs
 data/*.db
 data/*.sqlite
+data/recovery/
 logs/*.log
 *.log
 
