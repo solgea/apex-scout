@@ -55,6 +55,7 @@ jobs:
 
       - name: Create test .env
         run: |
+          mkdir -p data logs
           cat > .env <<'EOF'
           OKX_API_KEY=test_key
           OKX_API_SECRET=test_secret
@@ -118,6 +119,7 @@ jobs:
 
       - name: Write .env from secrets
         run: |
+          mkdir -p data logs
           cat > .env <<EOF
           OKX_API_KEY=${{ secrets.OKX_API_KEY }}
           OKX_API_SECRET=${{ secrets.OKX_API_SECRET }}
