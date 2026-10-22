@@ -3,10 +3,11 @@ Apex Scout - Veritabanı Katmanı (SQLAlchemy 2.0)
 SQLite ile başlar, PostgreSQL'e geçiş kolaydır.
 """
 
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator, Optional
+
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from config.settings import settings
@@ -64,7 +65,7 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, expi
 def init_db() -> None:
     """Veritabanı tablolarını oluşturur"""
     # Models'ları import et (metadata register olması için)
-    from shared.models import Token, Decision, Position, Trade, SystemMetrics  # noqa: F401
+    from shared.models import Decision, Position, SystemMetrics, Token, Trade  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 

@@ -3,10 +3,9 @@ Apex Scout - Performance Component
 Performans özeti, equity curve, metrikler.
 """
 
-import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
+import streamlit as st
 
 
 def render_performance(trades: list, positions: list, metrics: list):
@@ -26,8 +25,7 @@ def render_performance(trades: list, positions: list, metrics: list):
     total_pnl = total_realized + total_unrealized
 
     # Trade bazlı PnL
-    trade_pnls = []
-    for t in trades:
+    for _ in trades:
         # Basit: sell - buy için
         pass  # TODO: Proper PnL calculation from position
 
@@ -166,7 +164,7 @@ def render_equity_chart(metrics: list):
             y=values,
             mode="lines",
             name="Portföy Değeri",
-            line=dict(color="#1f77b4", width=2),
+            line={"color": "#1f77b4", "width": 2},
             fill="tozeroy",
             fillcolor="rgba(31, 119, 180, 0.1)",
         )
@@ -204,7 +202,7 @@ def render_risk_metrics(positions: list):
     ) / len(open_pos)
 
     trailing_active = sum(1 for p in open_pos if p.get("trailing_activated"))
-    tp_triggered_total = sum(p.get("current_tp_tier", 0) for p in open_pos)
+    sum(p.get("current_tp_tier", 0) for p in open_pos)
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:

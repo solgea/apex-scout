@@ -4,9 +4,11 @@ Emir, pozisyon, trade veri yapıları.
 """
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, Field
+
 from config.constants import OrderSide
 
 
@@ -30,15 +32,15 @@ class OrderStatus(str, Enum):
 class Order(BaseModel):
     """Emir modeli"""
 
-    id: Optional[str] = None  # Local ID
-    okx_order_id: Optional[str] = None  # OKX order ID
-    okx_cl_ord_id: Optional[str] = None  # Client order ID
+    id: str | None = None  # Local ID
+    okx_order_id: str | None = None  # OKX order ID
+    okx_cl_ord_id: str | None = None  # Client order ID
 
     inst_id: str = Field(..., description="Instrument ID (e.g., BONK-USDT)")
     side: OrderSide
     order_type: OrderType = OrderType.MARKET
     size: float = Field(..., gt=0, description="Token miktarı")
-    price: Optional[float] = Field(default=None, description="Limit fiyatı (market için None)")
+    price: float | None = Field(default=None, description="Limit fiyatı (market için None)")
 
     status: OrderStatus = OrderStatus.PENDING
     filled_size: float = 0.0
@@ -49,21 +51,21 @@ class Order(BaseModel):
     is_take_profit: bool = False
     is_stop_loss: bool = False
     is_trailing_stop: bool = False
-    tp_tier_index: Optional[int] = None
+    tp_tier_index: int | None = None
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    filled_at: Optional[datetime] = None
+    filled_at: datetime | None = None
 
-    raw_response: Dict[str, Any] = Field(default_factory=dict)
+    raw_response: dict[str, Any] = Field(default_factory=dict)
 
 
 class Trade(BaseModel):
     """Gerçekleşen trade (fill)"""
 
-    id: Optional[str] = None
-    position_id: Optional[int] = None
-    order_id: Optional[str] = None
+    id: str | None = None
+    position_id: int | None = None
+    order_id: str | None = None
 
     inst_id: str
     side: OrderSide
@@ -72,13 +74,13 @@ class Trade(BaseModel):
     fee: float = 0.0
     fee_ccy: str = "USDT"
 
-    okx_trade_id: Optional[str] = None
-    okx_order_id: Optional[str] = None
+    okx_trade_id: str | None = None
+    okx_order_id: str | None = None
 
     is_take_profit: bool = False
     is_stop_loss: bool = False
     is_trailing_stop: bool = False
-    tp_tier_index: Optional[int] = None
+    tp_tier_index: int | None = None
 
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
@@ -86,11 +88,11 @@ class Trade(BaseModel):
 class Position(BaseModel):
     """Pozisyon modeli"""
 
-    id: Optional[int] = None  # DB ID
-    token_id: Optional[int] = None
+    id: int | None = None  # DB ID
+    token_id: int | None = None
 
     inst_id: str
-    okx_pos_id: Optional[str] = None
+    okx_pos_id: str | None = None
 
     side: OrderSide = OrderSide.BUY
     entry_price: float
@@ -105,18 +107,18 @@ class Position(BaseModel):
 
     # Risk yönetimi
     stop_loss_price: float
-    take_profit_tiers: List[Dict[str, Any]] = Field(
+    take_profit_tiers: list[dict[str, Any]] = Field(
         default_factory=list
     )  # [{"profit_pct": 25, "sell_pct": 40, "triggered": false}]
     current_tp_tier: int = 0
-    trailing_stop_price: Optional[float] = None
+    trailing_stop_price: float | None = None
     trailing_activated: bool = False
 
     # Durum
     status: str = "OPEN"  # OPEN, PARTIAL, CLOSED, STOPPED_OUT, TRAILING_CLOSED
 
     opened_at: datetime = Field(default_factory=datetime.utcnow)
-    closed_at: Optional[datetime] = None
+    closed_at: datetime | None = None
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 
     def update_price(self, price: float):

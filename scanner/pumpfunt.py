@@ -7,18 +7,18 @@ WebSocket: wss://pumpportal.fun/api/data
 
 import asyncio
 import json
-import aiohttp
-import websockets
-from typing import List, Optional, Callable, Awaitable
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 
-from shared.logger import get_scanner_logger
-from shared.exceptions import PumpFunError
-from shared.utils import safe_float, utc_now
+import aiohttp
+import websockets
+
+from config.constants import TokenSource
 from config.settings import settings
 from scanner.base import BaseScanner
-from scanner.models import TokenData, TokenFilterCriteria, PumpFunToken, PumpFunResponse
-from config.constants import TokenSource
+from scanner.models import TokenData, TokenFilterCriteria
+from shared.logger import get_scanner_logger
+from shared.utils import safe_float, utc_now
 
 log = get_scanner_logger()
 
@@ -32,16 +32,16 @@ class PumpFunScanner(BaseScanner):
         "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
 
-    def __init__(self, filter_criteria: Optional[TokenFilterCriteria] = None):
+    def __init__(self, filter_criteria: TokenFilterCriteria | None = None):
         super().__init__(filter_criteria, source_name="pumpfunt")
         self.base_url = getattr(settings, "pumpfun_base_url", "https://frontend-api-v3.pump.fun")
         self.ws_url = "wss://pumpportal.fun/api/data"
-        self.session: Optional[aiohttp.ClientSession] = None
-        self.ws: Optional[websockets.WebSocketClientProtocol] = None
-        self._ws_task: Optional[asyncio.Task] = None
-        self._new_token_callback: Optional[Callable[[TokenData], Awaitable[None]]] = None
+        self.session: aiohttp.ClientSession | None = None
+        self.ws: websockets.WebSocketClientProtocol | None = None
+        self._ws_task: asyncio.Task | None = None
+        self._new_token_callback: Callable[[TokenData], Awaitable[None]] | None = None
         self._ws_connected = False
-        self._received_tokens: List[TokenData] = []
+        self._received_tokens: list[TokenData] = []
         self._max_buffer = 100
 
     async def __aenter__(self):
@@ -64,7 +64,7 @@ class PumpFunScanner(BaseScanner):
             )
         return self.session
 
-    async def fetch_new_tokens(self) -> List[TokenData]:
+    async def fetch_new_tokens(self) -> list[TokenData]:
         """
         REST API ile yeni token'ları çek.
         Endpoint: /coins/latest (veya benzeri)
@@ -87,7 +87,7 @@ class PumpFunScanner(BaseScanner):
 
         return unique
 
-    async def _fetch_via_rest(self) -> List[TokenData]:
+    async def _fetch_via_rest(self) -> list[TokenData]:
         """REST API ile token çek"""
         session = await self._get_session()
         tokens = []
@@ -117,7 +117,7 @@ class PumpFunScanner(BaseScanner):
 
         return tokens
 
-    def _parse_rest_response(self, data: dict) -> List[TokenData]:
+    def _parse_rest_response(self, data: dict) -> list[TokenData]:
         """REST response'u parse et"""
         tokens = []
 
@@ -143,7 +143,7 @@ class PumpFunScanner(BaseScanner):
 
         return tokens
 
-    def _parse_pumpfunt_token(self, item: dict) -> Optional[TokenData]:
+    def _parse_pumpfunt_token(self, item: dict) -> TokenData | None:
         """Pump.fun token verisini TokenData'ya çevir"""
         try:
             mint = item.get("mint") or item.get("address")
@@ -214,9 +214,7 @@ class PumpFunScanner(BaseScanner):
 
     # ============ WEBSOCKET ============
 
-    async def start_websocket(
-        self, callback: Optional[Callable[[TokenData], Awaitable[None]]] = None
-    ):
+    async def start_websocket(self, callback: Callable[[TokenData], Awaitable[None]] | None = None):
         """WebSocket bağlantısını başlat ve yeni token'ları dinle"""
         self._new_token_callback = callback
         self._ws_task = asyncio.create_task(self._ws_loop())
@@ -279,13 +277,13 @@ class PumpFunScanner(BaseScanner):
         except Exception as e:
             log.warning(f"[PumpFun] WS message error: {e}")
 
-    def _drain_ws_buffer(self) -> List[TokenData]:
+    def _drain_ws_buffer(self) -> list[TokenData]:
         """WebSocket buffer'ını boşalt ve token'ları döndür"""
         tokens = self._received_tokens.copy()
         self._received_tokens.clear()
         return tokens
 
-    async def fetch_token_details(self, address: str) -> Optional[TokenData]:
+    async def fetch_token_details(self, address: str) -> TokenData | None:
         """Tek token detayı (REST)"""
         session = await self._get_session()
 

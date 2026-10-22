@@ -4,10 +4,11 @@ Kontrol paneli ve ayarlar.
 """
 
 import streamlit as st
+
+from config.constants import PositionStatus
 from config.settings import settings
 from shared.database import get_session
 from shared.models import Position as DBPosition
-from config.constants import PositionStatus
 
 
 def render_sidebar():
@@ -118,9 +119,9 @@ def render_sidebar():
         # Bilgi
         st.markdown("### ℹ️ Bilgi")
         st.markdown(f"""
-        **Versiyon:** 1.0.0  
-        **Mod:** {'DEMO' if settings.okx_demo_trading else 'LIVE ⚠️'}  
-        **DB:** {settings.db_url}  
+        **Versiyon:** 1.0.0
+        **Mod:** {'DEMO' if settings.okx_demo_trading else 'LIVE ⚠️'}
+        **DB:** {settings.db_url}
         **Log:** logs/apex_scout.log
         """)
 

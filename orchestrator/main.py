@@ -5,27 +5,25 @@ Tüm döngüyü yönetir: Tarama -> Karar -> İşlem -> Pozisyon Takibi
 
 import asyncio
 import signal
-import sys
-from datetime import datetime, timedelta
-from typing import Optional, List
 from dataclasses import dataclass, field
+from datetime import datetime
 
-from shared.logger import get_logger
-from shared.database import init_db, get_session
-from shared.models import Token, Decision, Position as DBPosition, SystemMetrics
-from config.settings import settings
 from config.constants import DecisionAction, PositionStatus
+from config.settings import settings
+from decision.blacklist import BlacklistManager
+from decision.engine import DecisionEngine
 from scanner.dexscreener import DexScreenerScanner
-from scanner.pumpfunt import PumpFunScanner
 from scanner.filters import TokenFilter
 from scanner.models import TokenFilterCriteria
-from decision.engine import DecisionEngine
-from decision.blacklist import BlacklistManager
+from scanner.pumpfunt import PumpFunScanner
+from shared.database import get_session, init_db
+from shared.logger import get_logger
+from shared.models import Decision, SystemMetrics, Token
 from trading.okx_client import OKXDemoClient
-from trading.position_manager import PositionManager
-from trading.risk_manager import RiskManager
 from trading.order_executor import OrderExecutor
 from trading.portfolio import PortfolioManager
+from trading.position_manager import PositionManager
+from trading.risk_manager import RiskManager
 
 log = get_logger(__name__)
 
@@ -43,7 +41,7 @@ class OrchestratorStats:
     decisions_skip: int = 0
     trades_executed: int = 0
     errors: int = 0
-    last_cycle_time: Optional[datetime] = None
+    last_cycle_time: datetime | None = None
     last_cycle_duration_ms: float = 0.0
     start_time: datetime = field(default_factory=datetime.utcnow)
 
@@ -62,19 +60,19 @@ class Orchestrator:
         self._running = False
         self._paused = False
         self._shutdown_event = asyncio.Event()
-        self._main_task: Optional[asyncio.Task] = None
+        self._main_task: asyncio.Task | None = None
 
         # Bileşenler (lazy init)
-        self._dex_scanner: Optional[DexScreenerScanner] = None
-        self._pump_scanner: Optional[PumpFunScanner] = None
-        self._token_filter: Optional[TokenFilter] = None
-        self._decision_engine: Optional[DecisionEngine] = None
-        self._blacklist: Optional[BlacklistManager] = None
-        self._okx_client: Optional[OKXDemoClient] = None
-        self._position_manager: Optional[PositionManager] = None
-        self._risk_manager: Optional[RiskManager] = None
-        self._order_executor: Optional[OrderExecutor] = None
-        self._portfolio: Optional[PortfolioManager] = None
+        self._dex_scanner: DexScreenerScanner | None = None
+        self._pump_scanner: PumpFunScanner | None = None
+        self._token_filter: TokenFilter | None = None
+        self._decision_engine: DecisionEngine | None = None
+        self._blacklist: BlacklistManager | None = None
+        self._okx_client: OKXDemoClient | None = None
+        self._position_manager: PositionManager | None = None
+        self._risk_manager: RiskManager | None = None
+        self._order_executor: OrderExecutor | None = None
+        self._portfolio: PortfolioManager | None = None
 
         # Metrik delta takibi (per-cycle değerler için)
         self._last_metrics_saved = {
@@ -274,7 +272,7 @@ class Orchestrator:
 
     # ============ SCAN ============
 
-    async def _scan_tokens(self) -> List[Token]:
+    async def _scan_tokens(self) -> list[Token]:
         """Her iki kaynaktan token tara ve birleştir"""
         all_tokens = []
 
@@ -312,7 +310,7 @@ class Orchestrator:
 
     # ============ DECISION ============
 
-    async def _evaluate_decisions(self, tokens: List[Token]) -> List:
+    async def _evaluate_decisions(self, tokens: list[Token]) -> list:
         """Token'ları değerlendir"""
         results = self._decision_engine.evaluate_batch(tokens)
 
@@ -372,7 +370,7 @@ class Orchestrator:
 
     # ============ TRADE ============
 
-    async def _execute_trades(self, pass_decisions: List) -> int:
+    async def _execute_trades(self, pass_decisions: list) -> int:
         """PASS kararları için işlem aç"""
         executed = 0
 
@@ -472,7 +470,7 @@ class Orchestrator:
                         for t in tp_tiers
                     ]
 
-                    position = self._position_manager.create_position(
+                    self._position_manager.create_position(
                         token_id=decision.token.id if hasattr(decision.token, "id") else None,
                         inst_id=inst_id,
                         side=DecisionAction.PASS,  # BUY

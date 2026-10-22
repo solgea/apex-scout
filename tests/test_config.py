@@ -3,8 +3,9 @@ Apex Scout - Config Tests
 """
 
 import pytest
-from config.settings import Settings, TakeProfitTierModel
+
 from config.constants import DecisionAction, PositionStatus
+from config.settings import Settings, TakeProfitTierModel
 
 
 class TestSettings:

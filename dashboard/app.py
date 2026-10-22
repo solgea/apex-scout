@@ -3,26 +3,22 @@ Apex Scout - Main Dashboard Application
 Streamlit tabanlı canlı trading paneli.
 """
 
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-from datetime import datetime, timedelta
 import time
-import asyncio
-from typing import List, Dict, Any
+from datetime import datetime
 
-from shared.logger import get_logger
-from shared.database import get_session, init_db
-from shared.models import Token, Decision, Position, Trade, SystemMetrics, BlacklistEntry
+import pandas as pd
+import streamlit as st
+
 from config.settings import settings
-from config.constants import DecisionAction, PositionStatus
-from dashboard.components.sidebar import render_sidebar
-from dashboard.components.token_table import render_token_table
-from dashboard.components.positions import render_positions
 from dashboard.components.history import render_history
 from dashboard.components.performance import render_performance
+from dashboard.components.positions import render_positions
+from dashboard.components.sidebar import render_sidebar
 from dashboard.components.system_status import render_system_status
+from dashboard.components.token_table import render_token_table
+from shared.database import get_session, init_db
+from shared.logger import get_logger
+from shared.models import BlacklistEntry, Decision, Position, SystemMetrics, Token, Trade
 
 log = get_logger(__name__)
 
@@ -80,7 +76,7 @@ def init_session_state():
 
 
 @st.cache_data(ttl=5)
-def get_tokens(limit: int = 100) -> List[Dict]:
+def get_tokens(limit: int = 100) -> list[dict]:
     """Token verilerini getir (cached)"""
     with get_session() as session:
         tokens = session.query(Token).order_by(Token.discovered_at.desc()).limit(limit).all()
@@ -120,7 +116,7 @@ def get_tokens(limit: int = 100) -> List[Dict]:
 
 
 @st.cache_data(ttl=5)
-def get_positions() -> List[Dict]:
+def get_positions() -> list[dict]:
     """Pozisyon verilerini getir (cached)"""
     with get_session() as session:
         positions = session.query(Position).order_by(Position.opened_at.desc()).all()
@@ -155,7 +151,7 @@ def get_positions() -> List[Dict]:
 
 
 @st.cache_data(ttl=5)
-def get_trades(limit: int = 200) -> List[Dict]:
+def get_trades(limit: int = 200) -> list[dict]:
     """İşlem geçmişini getir (cached)"""
     with get_session() as session:
         trades = session.query(Trade).order_by(Trade.timestamp.desc()).limit(limit).all()
@@ -187,7 +183,7 @@ def get_trades(limit: int = 200) -> List[Dict]:
 
 
 @st.cache_data(ttl=5)
-def get_metrics(limit: int = 100) -> List[Dict]:
+def get_metrics(limit: int = 100) -> list[dict]:
     """Sistem metrikleri"""
     with get_session() as session:
         metrics = (
@@ -212,7 +208,7 @@ def get_metrics(limit: int = 100) -> List[Dict]:
 
 
 @st.cache_data(ttl=5)
-def get_blacklist() -> List[Dict]:
+def get_blacklist() -> list[dict]:
     """Blacklist"""
     with get_session() as session:
         entries = (
@@ -278,7 +274,7 @@ def render_metrics_row():
     trades = get_trades(1000)
 
     open_pos = [p for p in positions if p["status"] == "OPEN"]
-    closed_pos = [p for p in positions if p["status"] != "OPEN"]
+    [p for p in positions if p["status"] != "OPEN"]
 
     total_unrealized = sum(p["unrealized_pnl"] for p in open_pos)
     total_realized = sum(p["realized_pnl"] for p in positions)
@@ -360,7 +356,7 @@ def render_main_tabs():
         render_blacklist_tab(get_blacklist())
 
 
-def render_blacklist_tab(blacklist: List[Dict]):
+def render_blacklist_tab(blacklist: list[dict]):
     """Blacklist sekmesi"""
     st.subheader("🚫 Blacklist (Stop-Loss Yiyen Token'lar)")
 

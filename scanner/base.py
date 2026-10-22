@@ -4,12 +4,11 @@ Tüm scanner'lar için ortak arayüz.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
 from datetime import datetime
 
-from shared.logger import get_scanner_logger
-from shared.exceptions import ScannerError
 from scanner.models import TokenData, TokenFilterCriteria
+from shared.exceptions import ScannerError
+from shared.logger import get_scanner_logger
 
 log = get_scanner_logger()
 
@@ -19,17 +18,17 @@ class BaseScanner(ABC):
 
     def __init__(
         self,
-        filter_criteria: Optional[TokenFilterCriteria] = None,
+        filter_criteria: TokenFilterCriteria | None = None,
         source_name: str = "base",
     ):
         self.filter_criteria = filter_criteria
         self.source_name = source_name
-        self.last_scan_time: Optional[datetime] = None
+        self.last_scan_time: datetime | None = None
         self.scan_count = 0
         self.error_count = 0
 
     @abstractmethod
-    async def fetch_new_tokens(self) -> List[TokenData]:
+    async def fetch_new_tokens(self) -> list[TokenData]:
         """
         Yeni token'ları çek.
         Her kaynak kendi implementasyonunu yapar.
@@ -37,13 +36,13 @@ class BaseScanner(ABC):
         pass
 
     @abstractmethod
-    async def fetch_token_details(self, address: str) -> Optional[TokenData]:
+    async def fetch_token_details(self, address: str) -> TokenData | None:
         """
         Belirli bir token'ın detaylı bilgisini çek.
         """
         pass
 
-    async def scan(self) -> List[TokenData]:
+    async def scan(self) -> list[TokenData]:
         """
         Tam tarama döngüsü: fetch -> filter -> return.
         """

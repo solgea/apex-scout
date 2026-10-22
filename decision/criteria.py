@@ -3,10 +3,9 @@ Apex Scout - Skorlama Kriterleri
 Her kriter 0-100 arası skor verir, ağırlıklı toplam alınır.
 """
 
-from typing import Dict, Optional
 from config.settings import settings
-from scanner.models import TokenData
 from decision.models import ScoreBreakdown
+from scanner.models import TokenData
 
 
 class ScoringCriteria:
@@ -15,7 +14,7 @@ class ScoringCriteria:
     Her alt kriter 0-100 arası normalize skor verir.
     """
 
-    def __init__(self, weights: Optional[Dict[str, float]] = None):
+    def __init__(self, weights: dict[str, float] | None = None):
         self.weights = weights or settings.scoring_weights_dict
         self._validate_weights()
 

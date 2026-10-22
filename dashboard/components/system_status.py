@@ -3,10 +3,11 @@ Apex Scout - System Status Component
 Sistem durumu, loglar, sağlık kontrolü.
 """
 
-import streamlit as st
+from datetime import datetime
+
 import pandas as pd
-from datetime import datetime, timedelta
 import plotly.graph_objects as go
+import streamlit as st
 
 
 def render_system_status(metrics: list, blacklist: list):
@@ -129,7 +130,7 @@ def render_metrics_charts(metrics: list):
             y=[m["trades_executed"] for m in sorted_metrics],
             name="İşlemler",
             mode="lines",
-            line=dict(color="green"),
+            line={"color": "green"},
         )
     )
     fig2.add_trace(
@@ -138,7 +139,7 @@ def render_metrics_charts(metrics: list):
             y=[m["errors_count"] for m in sorted_metrics],
             name="Hatalar",
             mode="lines",
-            line=dict(color="red"),
+            line={"color": "red"},
         )
     )
     fig2.update_layout(title="İşlemler ve Hatalar", height=300, template="plotly_white")
@@ -162,15 +163,15 @@ def render_metrics_charts(metrics: list):
             name="Risk (%)",
             mode="lines",
             yaxis="y2",
-            line=dict(color="orange"),
+            line={"color": "orange"},
         )
     )
     fig3.update_layout(
         title="Portföy Değeri ve Risk",
         height=300,
         template="plotly_white",
-        yaxis=dict(title="Değer (USDT)", side="left"),
-        yaxis2=dict(title="Risk (%)", side="right", overlaying="y"),
+        yaxis={"title": "Değer (USDT)", "side": "left"},
+        yaxis2={"title": "Risk (%)", "side": "right", "overlaying": "y"},
     )
     st.plotly_chart(fig3, use_container_width=True)
 

@@ -4,8 +4,10 @@ API yanıtlarını parse etmek ve validate etmek için.
 """
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
+
 from config.constants import TokenSource
 
 
@@ -25,11 +27,11 @@ class TokenData(BaseModel):
 
     # Token yaşı ve durum
     age_seconds: int = Field(default=0, ge=0, description="Token yaşı (saniye)")
-    created_at: Optional[datetime] = Field(default=None, description="Oluşturulma zamanı")
+    created_at: datetime | None = Field(default=None, description="Oluşturulma zamanı")
 
     # Yetki kontrolleri
-    mint_authority: Optional[str] = Field(default=None, description="Mint authority address")
-    freeze_authority: Optional[str] = Field(default=None, description="Freeze authority address")
+    mint_authority: str | None = Field(default=None, description="Mint authority address")
+    freeze_authority: str | None = Field(default=None, description="Freeze authority address")
     mint_renounced: bool = Field(default=False, description="Mint yetkisi terk edilmiş mi")
     freeze_renounced: bool = Field(default=False, description="Freeze yetkisi terk edilmiş mi")
 
@@ -39,7 +41,7 @@ class TokenData(BaseModel):
 
     # Kaynak
     source: TokenSource = Field(default=TokenSource.DEXSCREENER, description="Veri kaynağı")
-    raw_data: Dict[str, Any] = Field(default_factory=dict, description="Ham API yanıtı")
+    raw_data: dict[str, Any] = Field(default_factory=dict, description="Ham API yanıtı")
 
     @field_validator("address")
     @classmethod
@@ -54,7 +56,7 @@ class TokenData(BaseModel):
     def normalize_symbol(cls, v: str) -> str:
         return v.upper().strip()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Dict'e çevir (DB kaydetmek için)"""
         return self.model_dump(exclude={"raw_data"})
 
@@ -69,10 +71,10 @@ class TokenFilterCriteria(BaseModel):
     max_top_10_holder_pct: float = Field(default=80.0, ge=0, le=100)
     require_mint_renounced: bool = Field(default=False)
     require_freeze_renounced: bool = Field(default=False)
-    excluded_symbols: List[str] = Field(default_factory=list)  # Blacklist semboller
-    excluded_addresses: List[str] = Field(default_factory=list)  # Blacklist adresler
+    excluded_symbols: list[str] = Field(default_factory=list)  # Blacklist semboller
+    excluded_addresses: list[str] = Field(default_factory=list)  # Blacklist adresler
 
-    def check(self, token: TokenData) -> tuple[bool, List[str]]:
+    def check(self, token: TokenData) -> tuple[bool, list[str]]:
         """
         Token filtrelerden geçer mi?
         Returns: (passed: bool, failed_reasons: List[str])
@@ -134,23 +136,23 @@ class DexScreenerPair(BaseModel):
     dex_id: str
     url: str
     pair_address: str
-    base_token: Dict[str, Any]
-    quote_token: Dict[str, Any]
-    price_usd: Optional[str] = None
-    liquidity: Optional[Dict[str, Any]] = None
-    fdv: Optional[float] = None
-    market_cap: Optional[float] = None
-    volume: Optional[Dict[str, Any]] = None
-    price_change: Optional[Dict[str, Any]] = None
-    txns: Optional[Dict[str, Any]] = None
-    created_at: Optional[int] = None
+    base_token: dict[str, Any]
+    quote_token: dict[str, Any]
+    price_usd: str | None = None
+    liquidity: dict[str, Any] | None = None
+    fdv: float | None = None
+    market_cap: float | None = None
+    volume: dict[str, Any] | None = None
+    price_change: dict[str, Any] | None = None
+    txns: dict[str, Any] | None = None
+    created_at: int | None = None
 
 
 class DexScreenerResponse(BaseModel):
     """DexScreener API response"""
 
     schema_version: str
-    pairs: List[DexScreenerPair] = []
+    pairs: list[DexScreenerPair] = []
 
 
 # Pump.fun özel response modelleri
@@ -161,12 +163,12 @@ class PumpFunToken(BaseModel):
     name: str
     symbol: str
     description: str
-    twitter: Optional[str] = None
-    telegram: Optional[str] = None
-    website: Optional[str] = None
+    twitter: str | None = None
+    telegram: str | None = None
+    website: str | None = None
     creator: str
     created_timestamp: int
-    raydium_pool: Optional[str] = None
+    raydium_pool: str | None = None
     complete: bool = False
     virtual_sol_reserves: float = 0
     virtual_token_reserves: float = 0
@@ -175,7 +177,7 @@ class PumpFunToken(BaseModel):
     total_supply: float = 0
     market_cap: float = 0
     reply_count: int = 0
-    last_reply: Optional[int] = None
+    last_reply: int | None = None
     nsfw: bool = False
     hidden: bool = False
 
@@ -183,4 +185,4 @@ class PumpFunToken(BaseModel):
 class PumpFunResponse(BaseModel):
     """Pump.fun API response"""
 
-    tokens: List[PumpFunToken] = []
+    tokens: list[PumpFunToken] = []

@@ -3,13 +3,13 @@ Apex Scout - Configuration Package
 Tüm ayarlar merkezi config/settings.py üzerinden yönetilir.
 """
 
-from .settings import settings
 from .constants import (
     DecisionAction,
-    PositionStatus,
     OrderSide,
+    PositionStatus,
     TokenSource,
 )
+from .settings import settings
 
 __all__ = [
     "settings",

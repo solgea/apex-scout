@@ -4,30 +4,25 @@ Sadece DEMO trading destekler. Gerçek hesap engellenir.
 OKX API v5: https://www.okx.com/docs-v5/
 """
 
-import time
-import hmac
-import hashlib
-import base64
-import json
 import asyncio
-from typing import Dict, List, Optional, Any
+import json
+import time
 from datetime import datetime
 
 import aiohttp
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from shared.logger import get_logger
+from config.constants import OKX_DEMO_HEADER, OKX_DEMO_VALUE, OKX_INST_ID_SUFFIX
+from config.settings import settings
 from shared.exceptions import (
+    InsufficientBalanceError,
     OKXAPIError,
     OKXAuthError,
     OKXRateLimitError,
     OrderExecutionError,
-    InsufficientBalanceError,
 )
+from shared.logger import get_logger
 from shared.utils import generate_signature, utc_now_iso
-from config.settings import settings
-from config.constants import OKX_DEMO_HEADER, OKX_DEMO_VALUE, OKX_INST_ID_SUFFIX
-from trading.models import Order, Trade, OrderSide, OrderType, OrderStatus, PortfolioSnapshot
+from trading.models import Order, OrderSide, OrderStatus, OrderType, Trade
 
 log = get_logger(__name__)
 
@@ -49,7 +44,7 @@ class OKXDemoClient:
         self.passphrase = settings.okx_passphrase
         self.base_url = settings.okx_base_url.rstrip("/")
 
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
         self._rate_limit_remaining = 100
         self._rate_limit_reset = 0
 
@@ -102,7 +97,7 @@ class OKXDemoClient:
             log.warning(f"Time sync check failed: {e}")
         return True  # Fail-open
 
-    def _get_headers(self, method: str, request_path: str, body: str = "") -> Dict[str, str]:
+    def _get_headers(self, method: str, request_path: str, body: str = "") -> dict[str, str]:
         """OKX imzalı header'ları oluştur"""
         timestamp = utc_now_iso()
         signature = generate_signature(timestamp, method, request_path, body, self.secret)
@@ -117,7 +112,7 @@ class OKXDemoClient:
         }
 
     @staticmethod
-    def _build_signed_path(endpoint: str, params: Dict = None) -> str:
+    def _build_signed_path(endpoint: str, params: dict = None) -> str:
         """
         İmzalama için request path oluştur.
         ÖNEMLİ: Query string imzaya DAHİL EDİLMELİ (OKX kuralı).
@@ -131,8 +126,8 @@ class OKXDemoClient:
         return f"{endpoint}?{query}" if query else endpoint
 
     async def _request(
-        self, method: str, endpoint: str, params: Dict = None, data: Dict = None, auth: bool = True
-    ) -> Dict:
+        self, method: str, endpoint: str, params: dict = None, data: dict = None, auth: bool = True
+    ) -> dict:
         """HTTP isteği gönder - Her retry'de fresh timestamp + query string imzası ile"""
         session = await self._get_session()
         url = f"{self.base_url}{endpoint}"
@@ -220,7 +215,7 @@ class OKXDemoClient:
 
     # ============ ACCOUNT / BALANCE ============
 
-    async def get_account_balance(self, ccy: str = "USDT") -> Dict:
+    async def get_account_balance(self, ccy: str = "USDT") -> dict:
         """Hesap bakiyesi (Demo)"""
         result = await self._request("GET", "/api/v5/account/balance", params={"ccy": ccy})
         return result["data"][0] if result["data"] else {}
@@ -236,7 +231,7 @@ class OKXDemoClient:
 
     # ============ MARKET DATA ============
 
-    async def get_ticker(self, inst_id: str) -> Dict:
+    async def get_ticker(self, inst_id: str) -> dict:
         """Anlık ticker"""
         result = await self._request("GET", "/api/v5/market/ticker", params={"instId": inst_id})
         return result["data"][0] if result["data"] else {}
@@ -282,7 +277,7 @@ class OKXDemoClient:
         if not self._instrument_cache or (now - self._instrument_cache_time) > max_age:
             await self.refresh_instruments()
 
-    async def find_instrument(self, symbol: str) -> Optional[str]:
+    async def find_instrument(self, symbol: str) -> str | None:
         """
         Sembol için OKX instrument ID bul.
         Token'ın gerçek adı farklı olabilir, bu yüzden cache'de arama yapılır.
@@ -307,7 +302,7 @@ class OKXDemoClient:
 
         return None
 
-    async def get_candles(self, inst_id: str, bar: str = "1m", limit: int = 100) -> List[List]:
+    async def get_candles(self, inst_id: str, bar: str = "1m", limit: int = 100) -> list[list]:
         """Mum verileri (OHLCV)"""
         result = await self._request(
             "GET",
@@ -328,8 +323,8 @@ class OKXDemoClient:
         side: OrderSide,
         size: float,
         order_type: OrderType = OrderType.MARKET,
-        price: Optional[float] = None,
-        cl_ord_id: Optional[str] = None,
+        price: float | None = None,
+        cl_ord_id: str | None = None,
     ) -> Order:
         """Emir gönder (Demo)"""
         # Parametreleri hazırla
@@ -418,7 +413,7 @@ class OKXDemoClient:
 
     async def get_fills(
         self, inst_id: str = None, ord_id: str = None, after: str = None
-    ) -> List[Trade]:
+    ) -> list[Trade]:
         """Trade geçmişi (fills)"""
         params = {}
         if inst_id:
@@ -453,7 +448,7 @@ class OKXDemoClient:
 
     # ============ POSITIONS (Spot için position yok, balance kullan) ============
 
-    async def get_positions(self, inst_type: str = "SPOT") -> List[Dict]:
+    async def get_positions(self, inst_type: str = "SPOT") -> list[dict]:
         """Pozisyonlar (Spot için boş döner, futures için çalışır)"""
         result = await self._request(
             "GET", "/api/v5/account/positions", params={"instType": inst_type}
@@ -462,7 +457,7 @@ class OKXDemoClient:
 
     # ============ INSTRUMENTS ============
 
-    async def get_instruments(self, inst_type: str = "SPOT", inst_id: str = None) -> List[Dict]:
+    async def get_instruments(self, inst_type: str = "SPOT", inst_id: str = None) -> list[dict]:
         """Instrument listesi"""
         params = {"instType": inst_type}
         if inst_id:

@@ -3,14 +3,15 @@ Apex Scout - Yardımcı Fonksiyonlar
 Ortak kullanılan utility fonksiyonları.
 """
 
-import time
+import base64
 import hashlib
 import hmac
-import base64
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional, Callable, TypeVar
+import time
+from collections.abc import Callable
+from datetime import datetime, timezone
+from decimal import ROUND_DOWN, Decimal
 from functools import wraps
-from decimal import Decimal, ROUND_DOWN
+from typing import Any, TypeVar
 
 from config.settings import settings
 from shared.logger import get_logger
@@ -191,7 +192,7 @@ class CircuitBreaker:
         self.recovery_timeout = recovery_timeout
         self.expected_exception = expected_exception
         self.failure_count = 0
-        self.last_failure_time: Optional[float] = None
+        self.last_failure_time: float | None = None
         self.state = "closed"  # closed, open, half-open
 
     def call(self, func: Callable[..., T], *args, **kwargs) -> T:
@@ -207,7 +208,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self.on_success()
             return result
-        except self.expected_exception as e:
+        except self.expected_exception:
             self.on_failure()
             raise
 
@@ -224,7 +225,7 @@ class CircuitBreaker:
             result = await func(*args, **kwargs)
             self.on_success()
             return result
-        except self.expected_exception as e:
+        except self.expected_exception:
             self.on_failure()
             raise
 
@@ -284,7 +285,7 @@ def safe_int(value: Any, default: int = 0) -> int:
         return default
 
 
-def chunks(lst: List[Any], n: int) -> List[List[Any]]:
+def chunks(lst: list[Any], n: int) -> list[list[Any]]:
     """Listeyi n'li parçalara böl"""
     return [lst[i : i + n] for i in range(0, len(lst), n)]
 

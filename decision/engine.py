@@ -4,16 +4,15 @@ Token'ları skorlar, PASS/WATCH/SKIP kararı verir.
 """
 
 import time
-from typing import List, Optional
 from datetime import datetime
 
-from shared.logger import get_logger
-from shared.exceptions import DecisionError
-from config.settings import settings
 from config.constants import DecisionAction
-from scanner.models import TokenData
+from config.settings import settings
 from decision.criteria import ScoringCriteria
-from decision.models import DecisionResult, DecisionBatch, ScoreBreakdown
+from decision.models import DecisionBatch, DecisionResult, ScoreBreakdown
+from scanner.models import TokenData
+from shared.exceptions import DecisionError
+from shared.logger import get_logger
 
 log = get_logger(__name__)
 
@@ -28,7 +27,7 @@ class DecisionEngine:
         self,
         min_score_to_trade: int = None,
         watch_threshold: int = None,
-        scoring_criteria: Optional[ScoringCriteria] = None,
+        scoring_criteria: ScoringCriteria | None = None,
     ):
         self.min_score_to_trade = min_score_to_trade or settings.min_score_to_trade
         self.watch_threshold = watch_threshold or settings.watch_threshold
@@ -74,7 +73,7 @@ class DecisionEngine:
             log.error(f"[Decision] Evaluation error for {token.symbol}: {e}")
             raise DecisionError(f"Decision failed for {token.symbol}", {"error": str(e)}) from e
 
-    def evaluate_batch(self, tokens: List[TokenData]) -> DecisionBatch:
+    def evaluate_batch(self, tokens: list[TokenData]) -> DecisionBatch:
         """
         Token listesi değerlendir.
         """
@@ -114,7 +113,7 @@ class DecisionEngine:
 
     def _determine_action(
         self, token: TokenData, score: float, breakdown: ScoreBreakdown
-    ) -> tuple[DecisionAction, List[str]]:
+    ) -> tuple[DecisionAction, list[str]]:
         """
         Skora ve bileşenlere göre aksiyon belirle.
         """
@@ -144,14 +143,14 @@ class DecisionEngine:
         return action, reasons
 
     def _add_detailed_reasons(
-        self, token: TokenData, breakdown: ScoreBreakdown, reasons: List[str]
+        self, token: TokenData, breakdown: ScoreBreakdown, reasons: list[str]
     ):
         """Detaylı skor nedenlerini ekle"""
         # Güçlü yönler
         if breakdown.liquidity >= 70:
             reasons.append(f"Güçlü likidite: ${token.liquidity_usd:,.0f}")
         if breakdown.volume >= 70:
-            reasons.append(f"Yüksek hacim/likidite oranı")
+            reasons.append("Yüksek hacim/likidite oranı")
         if breakdown.age >= 70:
             reasons.append(f"Yeni token ({token.age_seconds/60:.0f} dk)")
         if breakdown.mcap >= 70:
@@ -175,7 +174,7 @@ class DecisionEngine:
         if breakdown.holder_dist < 30:
             reasons.append(f"Konsantre holder dağılımı (%{token.top_10_holder_pct:.0f} top10)")
 
-    def _check_critical_issues(self, token: TokenData) -> List[str]:
+    def _check_critical_issues(self, token: TokenData) -> list[str]:
         """
         PASS skoru alsa bile engelleyen kritik sorunlar.
         Returns: Boş liste = sorun yok, dolu = SKIP nedenleri
@@ -184,7 +183,6 @@ class DecisionEngine:
         Pump.fun hacim/holder bilgisi vermez, DexScreener da vermez.
         """
         issues = []
-        from config.constants import TokenSource
 
         # Likidite minimum altındaysa (config'de zaten filtrelenmeli ama double-check)
         if token.liquidity_usd < settings.min_liquidity_usd:

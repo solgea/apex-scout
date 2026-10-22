@@ -3,16 +3,15 @@ Apex Scout - Position Manager
 Pozisyon yaşam döngüsü: açma, güncelleme, kapatma, DB senkronizasyonu.
 """
 
-from typing import List, Optional, Dict, Any
 from datetime import datetime
-from decimal import Decimal, ROUND_DOWN
 
-from shared.logger import get_logger
-from shared.database import get_session
-from shared.models import Position as DBPosition, Trade as DBTrade, Token as DBToken
-from shared.exceptions import PositionNotFoundError, TradingError
 from config.constants import OrderSide, PositionStatus
-from trading.models import Position, Order, Trade, OrderSide as ModelOrderSide
+from shared.database import get_session
+from shared.logger import get_logger
+from shared.models import Position as DBPosition
+from shared.models import Trade as DBTrade
+from trading.models import OrderSide as ModelOrderSide
+from trading.models import Position
 from trading.risk_manager import RiskManager
 
 log = get_logger(__name__)
@@ -28,22 +27,22 @@ class PositionManager:
 
     def __init__(self, risk_manager: RiskManager):
         self.risk_manager = risk_manager
-        self._positions: Dict[int, Position] = {}  # db_id -> Position
-        self._positions_by_inst: Dict[str, Position] = {}  # inst_id -> Position
+        self._positions: dict[int, Position] = {}  # db_id -> Position
+        self._positions_by_inst: dict[str, Position] = {}  # inst_id -> Position
         self._next_id = 1
 
     # ============ CREATE ============
 
     def create_position(
         self,
-        token_id: Optional[int],
+        token_id: int | None,
         inst_id: str,
         side: OrderSide,
         entry_price: float,
         quantity: float,
         stop_loss_price: float,
-        take_profit_tiers: List[Dict],
-        okx_order_id: Optional[str] = None,
+        take_profit_tiers: list[dict],
+        okx_order_id: str | None = None,
     ) -> Position:
         """Yeni pozisyon oluştur (memory + DB)"""
         entry_value = entry_price * quantity
@@ -96,29 +95,29 @@ class PositionManager:
 
     # ============ READ ============
 
-    def get_position(self, position_id: int) -> Optional[Position]:
+    def get_position(self, position_id: int) -> Position | None:
         """ID ile pozisyon getir (memory cache)"""
         return self._positions.get(position_id)
 
-    def get_position_by_inst(self, inst_id: str) -> Optional[Position]:
+    def get_position_by_inst(self, inst_id: str) -> Position | None:
         """Instrument ID ile pozisyon getir"""
         return self._positions_by_inst.get(inst_id)
 
-    def get_all_positions(self) -> List[Position]:
+    def get_all_positions(self) -> list[Position]:
         """Tüm pozisyonlar"""
         return list(self._positions.values())
 
-    def get_open_positions(self) -> List[Position]:
+    def get_open_positions(self) -> list[Position]:
         """Açık pozisyonlar"""
         return [p for p in self._positions.values() if p.status == PositionStatus.OPEN]
 
-    def get_positions_by_status(self, status: str) -> List[Position]:
+    def get_positions_by_status(self, status: str) -> list[Position]:
         """Duruma göre pozisyonlar"""
         return [p for p in self._positions.values() if p.status == status]
 
     # ============ UPDATE ============
 
-    def update_price(self, position_id: int, current_price: float) -> Optional[Position]:
+    def update_price(self, position_id: int, current_price: float) -> Position | None:
         """Pozisyon fiyatını güncelle"""
         position = self._positions.get(position_id)
         if not position:
@@ -128,7 +127,7 @@ class PositionManager:
         self._sync_to_db(position)
         return position
 
-    def update_prices_batch(self, prices: Dict[str, float]):
+    def update_prices_batch(self, prices: dict[str, float]):
         """Birden fazla pozisyon fiyatını güncelle"""
         for inst_id, price in prices.items():
             position = self._positions_by_inst.get(inst_id)
@@ -254,7 +253,7 @@ class PositionManager:
         is_take_profit: bool = False,
         is_stop_loss: bool = False,
         is_trailing_stop: bool = False,
-        tp_tier_index: Optional[int] = None,
+        tp_tier_index: int | None = None,
     ):
         """Trade kaydet"""
         try:

@@ -4,15 +4,13 @@ Emir yürütme, takip, retry mantığı.
 """
 
 import asyncio
-from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from shared.logger import get_logger, get_trading_logger
-from shared.exceptions import OrderExecutionError, TradingError
-from config.settings import settings
 from config.constants import OrderSide
+from shared.exceptions import OrderExecutionError
+from shared.logger import get_logger, get_trading_logger
+from trading.models import Order, OrderStatus, OrderType
 from trading.okx_client import OKXDemoClient
-from trading.models import Order, Trade, OrderType, OrderStatus
 from trading.position_manager import PositionManager
 from trading.risk_manager import RiskManager
 
@@ -38,14 +36,14 @@ class OrderExecutor:
         self.okx = okx_client
         self.position_manager = position_manager
         self.risk_manager = risk_manager
-        self._pending_orders: Dict[str, Order] = {}  # cl_ord_id -> Order
+        self._pending_orders: dict[str, Order] = {}  # cl_ord_id -> Order
         self._order_semaphore = asyncio.Semaphore(3)  # Max 3 eşzamanlı emir
 
     async def execute_market_buy(
         self,
         inst_id: str,
         quantity: float,
-        cl_ord_id: Optional[str] = None,
+        cl_ord_id: str | None = None,
     ) -> Order:
         """Market alım emri gönder ve fill bekle"""
         return await self._execute_order(
@@ -60,7 +58,7 @@ class OrderExecutor:
         self,
         inst_id: str,
         quantity: float,
-        cl_ord_id: Optional[str] = None,
+        cl_ord_id: str | None = None,
     ) -> Order:
         """Market satım emri gönder ve fill bekle"""
         return await self._execute_order(
@@ -76,7 +74,7 @@ class OrderExecutor:
         inst_id: str,
         quantity: float,
         stop_price: float,
-        cl_ord_id: Optional[str] = None,
+        cl_ord_id: str | None = None,
     ) -> Order:
         """Stop-Loss emri gönder (stop-market)"""
         return await self._execute_order(
@@ -94,8 +92,8 @@ class OrderExecutor:
         side: OrderSide,
         order_type: OrderType,
         size: float,
-        price: Optional[float] = None,
-        cl_ord_id: Optional[str] = None,
+        price: float | None = None,
+        cl_ord_id: str | None = None,
     ) -> Order:
         """İç emir yürütme mantığı"""
         async with self._order_semaphore:
@@ -276,7 +274,7 @@ class OrderExecutor:
         for cid in to_remove:
             self._pending_orders.pop(cid, None)
 
-    def get_pending_orders(self) -> List[Order]:
+    def get_pending_orders(self) -> list[Order]:
         """Bekleyen emirler"""
         return list(self._pending_orders.values())
 

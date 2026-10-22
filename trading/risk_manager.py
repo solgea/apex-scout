@@ -3,20 +3,16 @@ Apex Scout - Risk Manager
 Kademeli TP, Trailing SL, Stop-Loss, Pozisyon limitleri, Portföy risk limiti.
 """
 
-from typing import List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 
-from shared.logger import get_logger
+from config.constants import OrderSide, PositionStatus
+from config.settings import settings
 from shared.exceptions import (
-    RiskError,
-    MaxPositionsExceededError,
-    MaxRiskExceededError,
     PositionSizeError,
 )
-from config.settings import settings
-from config.constants import OrderSide, PositionStatus
-from trading.models import Position, Order, OrderSide as ModelOrderSide, OrderType, OrderStatus
+from shared.logger import get_logger
+from trading.models import Order, OrderType, Position
 
 log = get_logger(__name__)
 
@@ -62,7 +58,7 @@ class RiskManager:
 
     def calculate_position_size(
         self, available_balance: float, entry_price: float
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Pozisyon boyutunu hesapla.
         Returns: (quantity, position_value_usd)
@@ -101,7 +97,7 @@ class RiskManager:
 
     def check_portfolio_risk(
         self,
-        current_positions: List[Position],
+        current_positions: list[Position],
         new_position_value: float,
         total_portfolio_value: float,
     ) -> RiskCheckResult:
@@ -130,7 +126,7 @@ class RiskManager:
             - current_exposure,
         )
 
-    def check_max_positions(self, current_positions: List[Position]) -> RiskCheckResult:
+    def check_max_positions(self, current_positions: list[Position]) -> RiskCheckResult:
         """Maksimum pozisyon sayısı kontrolü"""
         open_count = sum(1 for p in current_positions if p.status == "OPEN")
 
@@ -151,14 +147,14 @@ class RiskManager:
         else:
             return entry_price * (1 + self.stop_loss_pct / 100)
 
-    def create_take_profit_tiers(self, entry_price: float, side: OrderSide) -> List[TPTier]:
+    def create_take_profit_tiers(self, entry_price: float, side: OrderSide) -> list[TPTier]:
         """TP katmanlarını oluştur"""
         tiers = []
         for tp in self.take_profit_tiers:
             if side == OrderSide.BUY:
-                trigger_price = entry_price * (1 + tp["profit_pct"] / 100)
+                entry_price * (1 + tp["profit_pct"] / 100)
             else:
-                trigger_price = entry_price * (1 - tp["profit_pct"] / 100)
+                entry_price * (1 - tp["profit_pct"] / 100)
 
             tiers.append(
                 TPTier(
@@ -169,7 +165,7 @@ class RiskManager:
             )
         return tiers
 
-    def get_tp_trigger_prices(self, entry_price: float, side: OrderSide) -> List[float]:
+    def get_tp_trigger_prices(self, entry_price: float, side: OrderSide) -> list[float]:
         """TP tetikleme fiyatları"""
         prices = []
         for tp in self.take_profit_tiers:
@@ -185,7 +181,7 @@ class RiskManager:
         self,
         position: Position,
         current_price: float,
-    ) -> Tuple[Optional[str], Optional[float], Optional[int]]:
+    ) -> tuple[str | None, float | None, int | None]:
         """
         Pozisyon için çıkış koşullarını kontrol et.
         Returns: (action, price, tp_tier_index)
@@ -216,7 +212,7 @@ class RiskManager:
 
     def _check_take_profit(
         self, position: Position, current_price: float
-    ) -> Optional[Tuple[str, float, int]]:
+    ) -> tuple[str, float, int] | None:
         """Take-Profit katmanları kontrolü"""
         for i, tier in enumerate(position.take_profit_tiers):
             if tier.get("triggered"):
@@ -241,7 +237,7 @@ class RiskManager:
 
     def _check_trailing_stop(
         self, position: Position, current_price: float
-    ) -> Optional[Tuple[str, float, int]]:
+    ) -> tuple[str, float, int] | None:
         """Trailing Stop kontrolü"""
         # Trailing sadece ilk TP sonrası aktif olur
         if not position.trailing_activated:
@@ -340,7 +336,7 @@ class RiskManager:
         quantity: float,
     ) -> Order:
         """TP emri oluştur"""
-        tier = position.take_profit_tiers[tp_tier_index]
+        position.take_profit_tiers[tp_tier_index]
         side = OrderSide.SELL if position.side == OrderSide.BUY else OrderSide.BUY
 
         return Order(
@@ -378,7 +374,7 @@ class RiskManager:
             is_trailing_stop=True,
         )
 
-    def get_risk_summary(self, positions: List[Position], portfolio_value: float) -> dict:
+    def get_risk_summary(self, positions: list[Position], portfolio_value: float) -> dict:
         """Risk özeti"""
         open_positions = [p for p in positions if p.status == "OPEN"]
         total_exposure = sum(p.entry_value_usd for p in open_positions)

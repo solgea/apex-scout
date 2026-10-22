@@ -3,10 +3,10 @@ Apex Scout - Positions Component
 Açık pozisyonlar, PnL, TP/SL seviyeleri.
 """
 
-import streamlit as st
-import pandas as pd
 from datetime import datetime
-from config.constants import PositionStatus
+
+import pandas as pd
+import streamlit as st
 
 
 def render_positions(positions: list):
@@ -105,7 +105,7 @@ def render_positions(positions: list):
                         "Açılış": (
                             p["opened_at"].strftime("%m/%d %H:%M") if p["opened_at"] else "N/A"
                         ),
-                        "Kapanış": (
+                        "Kapanış Zamanı": (
                             p["closed_at"].strftime("%m/%d %H:%M") if p["closed_at"] else "N/A"
                         ),
                     }

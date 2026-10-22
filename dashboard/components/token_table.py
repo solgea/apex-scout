@@ -3,8 +3,9 @@ Apex Scout - Token Table Component
 Canlı token listesi ve skorları.
 """
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
+
 from config.constants import DecisionAction
 
 

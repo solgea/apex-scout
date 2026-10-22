@@ -4,12 +4,11 @@ Stop-Loss yiyen token'ları geçici olarak engeller.
 """
 
 from datetime import datetime, timedelta
-from typing import List, Optional
 
-from shared.logger import get_logger
-from shared.database import get_session
-from shared.models import BlacklistEntry
 from config.settings import settings
+from shared.database import get_session
+from shared.logger import get_logger
+from shared.models import BlacklistEntry
 
 log = get_logger(__name__)
 
@@ -94,7 +93,7 @@ class BlacklistManager:
             )
             return entry is not None
 
-    def get_remaining_time(self, token_address: str) -> Optional[timedelta]:
+    def get_remaining_time(self, token_address: str) -> timedelta | None:
         """Kalan süreyi döndür"""
         with get_session() as session:
             entry = (
@@ -107,7 +106,7 @@ class BlacklistManager:
                 return entry.expires_at - datetime.utcnow()
             return None
 
-    def get_all_active(self) -> List[dict]:
+    def get_all_active(self) -> list[dict]:
         """Aktif blacklist entry'leri"""
         now = datetime.utcnow()
         with get_session() as session:

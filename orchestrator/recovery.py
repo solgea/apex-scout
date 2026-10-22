@@ -5,17 +5,15 @@ Hata kurtarma, state persistence, crash recovery.
 
 import asyncio
 import json
-import pickle
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Callable, Awaitable
 from pathlib import Path
-from dataclasses import dataclass, field, asdict
 
-from shared.logger import get_logger
-from shared.database import get_session
-from shared.models import Position as DBPosition, Token, Decision
 from config.constants import PositionStatus
-from config.settings import settings
+from shared.database import get_session
+from shared.logger import get_logger
+from shared.models import Position as DBPosition
 
 log = get_logger(__name__)
 
@@ -25,11 +23,11 @@ class RecoveryState:
     """Kurtarma durumu"""
 
     last_save: datetime = field(default_factory=datetime.utcnow)
-    orchestrator_stats: Dict = field(default_factory=dict)
+    orchestrator_stats: dict = field(default_factory=dict)
     open_positions: list = field(default_factory=list)
     pending_decisions: list = field(default_factory=list)
-    scanner_state: Dict = field(default_factory=dict)
-    metadata: Dict = field(default_factory=dict)
+    scanner_state: dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 
 class RecoveryManager:
@@ -48,12 +46,12 @@ class RecoveryManager:
         self._backup_dir.mkdir(exist_ok=True)
 
         self._save_interval = 60  # saniye
-        self._save_task: Optional[asyncio.Task] = None
+        self._save_task: asyncio.Task | None = None
         self._running = False
 
         # Callbacks
-        self._get_state_callback: Optional[Callable[[], Awaitable[RecoveryState]]] = None
-        self._restore_callback: Optional[Callable[[RecoveryState], Awaitable[None]]] = None
+        self._get_state_callback: Callable[[], Awaitable[RecoveryState]] | None = None
+        self._restore_callback: Callable[[RecoveryState], Awaitable[None]] | None = None
 
     def set_callbacks(
         self,
@@ -142,7 +140,7 @@ class RecoveryManager:
             return False
 
         try:
-            with open(self._state_file, "r") as f:
+            with open(self._state_file) as f:
                 data = json.load(f)
 
             state = self._deserialize_state(data)
@@ -186,7 +184,7 @@ class RecoveryManager:
         except Exception as e:
             log.error(f"[Recovery] Position validation failed: {e}")
 
-    def _serialize_state(self, state: RecoveryState) -> Dict:
+    def _serialize_state(self, state: RecoveryState) -> dict:
         """State'i JSON serializable dict'e çevir"""
         return {
             "last_save": state.last_save.isoformat(),
@@ -197,7 +195,7 @@ class RecoveryManager:
             "metadata": state.metadata,
         }
 
-    def _deserialize_state(self, data: Dict) -> RecoveryState:
+    def _deserialize_state(self, data: dict) -> RecoveryState:
         """Dict'ten RecoveryState oluştur"""
         return RecoveryState(
             last_save=datetime.fromisoformat(data["last_save"]),
@@ -240,7 +238,7 @@ class RecoveryManager:
             for b in backups
         ]
 
-    def get_latest_backup(self) -> Optional[Path]:
+    def get_latest_backup(self) -> Path | None:
         """En son backup"""
         backups = sorted(self._backup_dir.glob("state_*.json"), reverse=True)
         return backups[0] if backups else None
@@ -253,7 +251,7 @@ class RecoveryManager:
             return False
 
         try:
-            with open(backup_file, "r") as f:
+            with open(backup_file) as f:
                 data = json.load(f)
 
             state = self._deserialize_state(data)

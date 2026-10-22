@@ -3,13 +3,12 @@ Apex Scout - Token Filtreleme Mantığı
 Scanner'dan gelen token'ları config'e göre filtreler.
 """
 
-from typing import List, Optional, Set
 from datetime import datetime, timedelta
 
-from shared.logger import get_scanner_logger
 from config.settings import settings
 from scanner.models import TokenData, TokenFilterCriteria
 from shared.database import get_session
+from shared.logger import get_scanner_logger
 from shared.models import BlacklistEntry
 
 log = get_scanner_logger()
@@ -21,7 +20,7 @@ class TokenFilter:
     Config'den kriterleri alır, blacklist kontrolü yapar.
     """
 
-    def __init__(self, custom_criteria: Optional[TokenFilterCriteria] = None):
+    def __init__(self, custom_criteria: TokenFilterCriteria | None = None):
         if custom_criteria:
             self.criteria = custom_criteria
         else:
@@ -35,11 +34,11 @@ class TokenFilter:
                 require_mint_renounced=False,
                 require_freeze_renounced=False,
             )
-        self._blacklist_cache: Set[str] = set()
-        self._blacklist_cache_time: Optional[datetime] = None
+        self._blacklist_cache: set[str] = set()
+        self._blacklist_cache_time: datetime | None = None
         self._cache_ttl = timedelta(minutes=5)
 
-    def filter_tokens(self, tokens: List[TokenData]) -> List[TokenData]:
+    def filter_tokens(self, tokens: list[TokenData]) -> list[TokenData]:
         """
         Token listesini filtrele.
         Returns: Geçen token'lar
@@ -61,7 +60,7 @@ class TokenFilter:
         log.info(f"[Filter] {len(passed)}/{len(tokens)} tokens passed")
         return passed
 
-    def check_token(self, token: TokenData) -> tuple[bool, List[str]]:
+    def check_token(self, token: TokenData) -> tuple[bool, list[str]]:
         """
         Tek token'ı kontrol et.
         Returns: (passed, reasons)
@@ -144,7 +143,7 @@ class TokenFilter:
         self._refresh_blacklist_cache()
         return token_address in self._blacklist_cache
 
-    def get_blacklist(self) -> List[dict]:
+    def get_blacklist(self) -> list[dict]:
         """Aktif blacklist'i döndür"""
         self._refresh_blacklist_cache()
         now = datetime.utcnow()

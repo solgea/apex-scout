@@ -3,12 +3,12 @@ Apex Scout - Decision Engine Tests
 """
 
 import pytest
-from datetime import datetime, timezone
-from scanner.models import TokenData, TokenFilterCriteria
-from config.constants import TokenSource, DecisionAction
+
+from config.constants import DecisionAction, TokenSource
 from decision.criteria import ScoringCriteria
 from decision.engine import DecisionEngine
 from decision.models import DecisionResult
+from scanner.models import TokenData
 
 
 class TestScoringCriteria:

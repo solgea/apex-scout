@@ -3,18 +3,18 @@ Apex Scout - Portfolio Manager
 Portföy takibi, bakiye yönetimi, performans metrikleri.
 """
 
-from typing import Dict, List, Optional
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 
-from shared.logger import get_logger
-from shared.database import get_session
-from shared.models import Position as DBPosition, Trade as DBTrade, SystemMetrics
-from config.settings import settings
 from config.constants import PositionStatus
+from shared.database import get_session
+from shared.logger import get_logger
+from shared.models import Position as DBPosition
+from shared.models import SystemMetrics
+from shared.models import Trade as DBTrade
 from trading.models import PortfolioSnapshot
-from trading.position_manager import PositionManager
 from trading.okx_client import OKXDemoClient
+from trading.position_manager import PositionManager
 
 log = get_logger(__name__)
 
@@ -56,10 +56,10 @@ class PortfolioManager:
     ):
         self.okx = okx_client
         self.position_manager = position_manager
-        self._initial_balance: Optional[float] = None
+        self._initial_balance: float | None = None
         self._peak_balance: float = 0.0
-        self._daily_start_balance: Optional[float] = None
-        self._daily_start_date: Optional[datetime] = None
+        self._daily_start_balance: float | None = None
+        self._daily_start_date: datetime | None = None
 
     async def initialize(self):
         """Başlangıç bakiyesini al"""
@@ -209,7 +209,7 @@ class PortfolioManager:
         # Bu basit bir implementasyon, gerçekte snapshot'tan alınmalı
         return 0.0  # TODO: Implement properly
 
-    def get_trade_history(self, limit: int = 100, offset: int = 0) -> List[Dict]:
+    def get_trade_history(self, limit: int = 100, offset: int = 0) -> list[dict]:
         """İşlem geçmişi"""
         with get_session() as session:
             trades = (
@@ -223,7 +223,7 @@ class PortfolioManager:
             result = []
             for trade in trades:
                 pos = session.query(DBPosition).filter(DBPosition.id == trade.position_id).first()
-                token = session.query(DBPosition).filter(DBPosition.id == trade.position_id).first()
+                session.query(DBPosition).filter(DBPosition.id == trade.position_id).first()
                 # Token bilgisini al
                 token_sym = "N/A"
                 if pos and pos.token_id:
@@ -251,7 +251,7 @@ class PortfolioManager:
                 )
             return result
 
-    def get_open_positions_summary(self) -> List[Dict]:
+    def get_open_positions_summary(self) -> list[dict]:
         """Açık pozisyonlar özeti"""
         positions = self.position_manager.get_open_positions()
         return [
@@ -276,7 +276,7 @@ class PortfolioManager:
             for p in positions
         ]
 
-    def save_metrics(self, metrics: Dict):
+    def save_metrics(self, metrics: dict):
         """Sistem metriklerini kaydet"""
         try:
             with get_session() as session:
@@ -286,7 +286,7 @@ class PortfolioManager:
         except Exception as e:
             log.error(f"[Portfolio] Metrics save failed: {e}")
 
-    def get_equity_curve(self, hours: int = 24) -> List[Dict]:
+    def get_equity_curve(self, hours: int = 24) -> list[dict]:
         """Eğri verisi (son N saat)"""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
         with get_session() as session:

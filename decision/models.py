@@ -3,9 +3,11 @@ Apex Scout - Decision Modelleri (Pydantic)
 Karar motoru girdi/çıktı modelleri.
 """
 
-from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
+
 from config.constants import DecisionAction
 from scanner.models import TokenData
 
@@ -22,7 +24,7 @@ class ScoreBreakdown(BaseModel):
         default=0.0, ge=0, le=100, description="Holder dağılımı skoru (0-100)"
     )
 
-    def total(self, weights: Dict[str, float]) -> float:
+    def total(self, weights: dict[str, float]) -> float:
         """Ağırlıklı toplam skor"""
         return (
             self.liquidity * weights.get("liquidity", 0)
@@ -41,10 +43,10 @@ class DecisionResult(BaseModel):
     score: float = Field(default=0.0, ge=0, le=100, description="Toplam skor (0-100)")
     action: DecisionAction = Field(default=DecisionAction.SKIP, description="PASS/WATCH/SKIP")
     breakdown: ScoreBreakdown = Field(default_factory=ScoreBreakdown)
-    reasons: List[str] = Field(default_factory=list, description="Karar nedenleri")
+    reasons: list[str] = Field(default_factory=list, description="Karar nedenleri")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Dict'e çevir"""
         return {
             "token": self.token.to_dict(),
@@ -62,7 +64,7 @@ class DecisionResult(BaseModel):
 class DecisionBatch(BaseModel):
     """Toplu karar sonucu"""
 
-    results: List[DecisionResult] = Field(default_factory=list)
+    results: list[DecisionResult] = Field(default_factory=list)
     scan_duration_ms: float = 0.0
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
@@ -78,5 +80,5 @@ class DecisionBatch(BaseModel):
     def skip_count(self) -> int:
         return sum(1 for r in self.results if r.action == DecisionAction.SKIP)
 
-    def get_pass_tokens(self) -> List[TokenData]:
+    def get_pass_tokens(self) -> list[TokenData]:
         return [r.token for r in self.results if r.action == DecisionAction.PASS]

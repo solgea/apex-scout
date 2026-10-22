@@ -2,9 +2,10 @@
 Apex Scout - Pytest Configuration
 """
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Proje kökünü path'e ekle
 sys.path.insert(0, str(Path(__file__).parent.parent))

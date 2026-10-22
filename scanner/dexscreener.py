@@ -6,17 +6,17 @@ API: https://api.dexscreener.com/token-profiles/latest/v1
 """
 
 import asyncio
-import aiohttp
-from typing import List, Optional
 from datetime import datetime, timezone
 
-from shared.logger import get_scanner_logger
-from shared.exceptions import DexScreenerError
-from shared.utils import safe_float, utc_now
+import aiohttp
+
+from config.constants import TokenSource
 from config.settings import settings
 from scanner.base import BaseScanner
-from scanner.models import TokenData, TokenFilterCriteria, DexScreenerResponse, DexScreenerPair
-from config.constants import TokenSource
+from scanner.models import TokenData, TokenFilterCriteria
+from shared.exceptions import DexScreenerError
+from shared.logger import get_scanner_logger
+from shared.utils import safe_float, utc_now
 
 log = get_scanner_logger()
 
@@ -24,10 +24,10 @@ log = get_scanner_logger()
 class DexScreenerScanner(BaseScanner):
     """DexScreener API scanner"""
 
-    def __init__(self, filter_criteria: Optional[TokenFilterCriteria] = None):
+    def __init__(self, filter_criteria: TokenFilterCriteria | None = None):
         super().__init__(filter_criteria, source_name="dexscreener")
         self.base_url = settings.dexscreener_base_url
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
         self._semaphore = asyncio.Semaphore(10)  # Eşzamanlı istek limiti
 
     async def __aenter__(self):
@@ -52,7 +52,7 @@ class DexScreenerScanner(BaseScanner):
             )
         return self.session
 
-    async def fetch_new_tokens(self) -> List[TokenData]:
+    async def fetch_new_tokens(self) -> list[TokenData]:
         """
         DexScreener'dan en yeni token profillerini çek.
         Endpoint: /token-profiles/latest/v1
@@ -84,7 +84,7 @@ class DexScreenerScanner(BaseScanner):
         tokens = []
         semaphore = asyncio.Semaphore(5)  # Detay çekerken daha konservatif
 
-        async def fetch_detail(profile: dict) -> Optional[TokenData]:
+        async def fetch_detail(profile: dict) -> TokenData | None:
             address = profile.get("tokenAddress")
             if not address:
                 return None
@@ -105,7 +105,7 @@ class DexScreenerScanner(BaseScanner):
 
     async def _fetch_token_detail(
         self, session: aiohttp.ClientSession, address: str, profile: dict
-    ) -> Optional[TokenData]:
+    ) -> TokenData | None:
         """Token detayını çek ve TokenData'ya çevir"""
         url = f"{self.base_url}/tokens/v1/solana/{address}"
 
@@ -128,11 +128,11 @@ class DexScreenerScanner(BaseScanner):
         # Veriyi parse et
         return self._parse_pair_to_token(pair, profile)
 
-    def _parse_pair_to_token(self, pair: dict, profile: dict) -> Optional[TokenData]:
+    def _parse_pair_to_token(self, pair: dict, profile: dict) -> TokenData | None:
         """DexScreener pair verisini TokenData'ya çevir"""
         try:
             base_token = pair.get("baseToken", {})
-            quote_token = pair.get("quoteToken", {})
+            pair.get("quoteToken", {})
 
             # Solana token base token olmalı (quote genellikle SOL/USDC)
             address = base_token.get("address")
@@ -186,7 +186,7 @@ class DexScreenerScanner(BaseScanner):
             log.warning(f"[DexScreener] Parse error: {e}")
             return None
 
-    async def fetch_token_details(self, address: str) -> Optional[TokenData]:
+    async def fetch_token_details(self, address: str) -> TokenData | None:
         """Tek bir token'ın detayını çek"""
         session = await self._get_session()
         url = f"{self.base_url}/tokens/v1/solana/{address}"

@@ -3,10 +3,10 @@ Apex Scout - Risk Manager Tests
 """
 
 import pytest
-from config.settings import settings
+
 from config.constants import OrderSide, PositionStatus
-from trading.risk_manager import RiskManager, TPTier
 from trading.models import Position
+from trading.risk_manager import RiskManager, TPTier
 
 
 class TestRiskManager:

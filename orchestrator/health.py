@@ -4,15 +4,17 @@ Sistem sağlık kontrolü, metrik toplama, alerting.
 """
 
 import asyncio
-import psutil
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, Callable, Awaitable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any
 
-from shared.logger import get_logger
-from shared.database import get_session
-from shared.models import SystemMetrics
+import psutil
+
 from config.settings import settings
+from shared.database import get_session
+from shared.logger import get_logger
+from shared.models import SystemMetrics
 
 log = get_logger(__name__)
 
@@ -22,9 +24,9 @@ class HealthStatus:
     """Sağlık durumu"""
 
     healthy: bool = True
-    checks: Dict[str, bool] = field(default_factory=dict)
-    messages: Dict[str, str] = field(default_factory=dict)
-    last_check: Optional[datetime] = None
+    checks: dict[str, bool] = field(default_factory=dict)
+    messages: dict[str, str] = field(default_factory=dict)
+    last_check: datetime | None = None
     issues: list = field(default_factory=list)
 
 
@@ -39,10 +41,10 @@ class HealthMonitor:
     """
 
     def __init__(self):
-        self._checks: Dict[str, Callable[[], Awaitable[tuple[bool, str]]]] = {}
+        self._checks: dict[str, Callable[[], Awaitable[tuple[bool, str]]]] = {}
         self._alert_callbacks: list[Callable[[HealthStatus], Awaitable[None]]] = []
         self._last_status = HealthStatus()
-        self._monitor_task: Optional[asyncio.Task] = None
+        self._monitor_task: asyncio.Task | None = None
         self._running = False
 
         # Varsayılan check'leri ekle

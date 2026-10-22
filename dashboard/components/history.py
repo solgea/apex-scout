@@ -3,10 +3,10 @@ Apex Scout - History Component
 İşlem geçmişi, filtreleme, export.
 """
 
-import streamlit as st
-import pandas as pd
 from datetime import datetime, timedelta
-from io import BytesIO
+
+import pandas as pd
+import streamlit as st
 
 
 def render_history(trades: list):
@@ -73,7 +73,6 @@ def render_history(trades: list):
     # Tablo
     df_data = []
     for t in filtered:
-        pnl_est = 0  # Basit tahmin
         df_data.append(
             {
                 "Zaman": t["timestamp"].strftime("%m/%d %H:%M:%S") if t["timestamp"] else "N/A",
@@ -127,7 +126,7 @@ def render_trade_summary(trades: list):
 
     tp_trades = [t for t in trades if t.get("is_take_profit")]
     sl_trades = [t for t in trades if t.get("is_stop_loss")]
-    trail_trades = [t for t in trades if t.get("is_trailing_stop")]
+    [t for t in trades if t.get("is_trailing_stop")]
 
     col1, col2, col3, col4, col5 = st.columns(5)
 

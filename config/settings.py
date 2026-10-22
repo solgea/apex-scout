@@ -4,7 +4,6 @@ Tüm ortam değişkenleri buradan doğrulanır ve erişilir.
 .env dosyasından okur, tip güvenliği sağlar.
 """
 
-from typing import List, Optional
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -86,7 +85,7 @@ class Settings(BaseSettings):
     )
     stop_loss_pct: float = Field(default=15.0, ge=1, le=90, description="Stop-Loss (%)")
     trailing_stop_pct: float = Field(default=10.0, ge=1, le=50, description="Trailing Stop (%)")
-    take_profit_tiers: List[TakeProfitTierModel] = Field(
+    take_profit_tiers: list[TakeProfitTierModel] = Field(
         default=[
             {"profit_pct": 25.0, "sell_pct": 40.0},
             {"profit_pct": 45.0, "sell_pct": 40.0},
@@ -204,7 +203,7 @@ class Settings(BaseSettings):
             "x-simulated-trading": "1",  # ZORUNLU: Demo trading header
         }
 
-    def get_take_profit_tiers(self) -> List[dict]:
+    def get_take_profit_tiers(self) -> list[dict]:
         """TP katmanlarını dict listesi olarak döner"""
         return [
             {"profit_pct": t.profit_pct, "sell_pct": t.sell_pct} for t in self.take_profit_tiers

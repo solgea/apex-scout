@@ -9,21 +9,20 @@ Usage:
     python main.py --help       # Show help
 """
 
-import asyncio
 import argparse
-import sys
+import asyncio
 import os
+import sys
 from pathlib import Path
 
 # Proje kök dizinini path'e ekle
 sys.path.insert(0, str(Path(__file__).parent))
 
-from shared.logger import setup_logger, get_logger
 from config.settings import settings
-from orchestrator.main import Orchestrator
 from orchestrator.health import HealthMonitor
+from orchestrator.main import Orchestrator
 from orchestrator.recovery import RecoveryManager
-from dashboard.app import run_dashboard
+from shared.logger import get_logger, setup_logger
 
 # Logger'ı başlat
 setup_logger()

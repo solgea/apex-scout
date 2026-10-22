@@ -3,10 +3,10 @@ Apex Scout - Scanner Filter Tests
 """
 
 import pytest
-from datetime import datetime, timezone
-from scanner.models import TokenData, TokenFilterCriteria
-from scanner.filters import TokenFilter
+
 from config.constants import TokenSource
+from scanner.filters import TokenFilter
+from scanner.models import TokenData, TokenFilterCriteria
 
 
 class TestTokenFilterCriteria:

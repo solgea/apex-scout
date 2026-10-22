@@ -4,9 +4,9 @@ Zamanlanmış görevler: periyodik temizlik, raporlama, bakım.
 """
 
 import asyncio
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Callable, Awaitable, Optional, List, Dict
-from dataclasses import dataclass, field
 
 from shared.logger import get_logger
 
@@ -20,8 +20,8 @@ class ScheduledTask:
     name: str
     coro_func: Callable[[], Awaitable[None]]
     interval_seconds: float
-    last_run: Optional[datetime] = None
-    next_run: Optional[datetime] = None
+    last_run: datetime | None = None
+    next_run: datetime | None = None
     enabled: bool = True
     run_count: int = 0
     error_count: int = 0
@@ -34,9 +34,9 @@ class TaskScheduler:
     """
 
     def __init__(self):
-        self._tasks: List[ScheduledTask] = []
+        self._tasks: list[ScheduledTask] = []
         self._running = False
-        self._scheduler_task: Optional[asyncio.Task] = None
+        self._scheduler_task: asyncio.Task | None = None
 
     def add_task(
         self,
@@ -131,7 +131,7 @@ class TaskScheduler:
             task.next_run = now + timedelta(seconds=task.interval_seconds)
             log.error(f"[Scheduler] Task {task.name} failed: {e}")
 
-    def get_tasks_status(self) -> List[Dict]:
+    def get_tasks_status(self) -> list[dict]:
         """Tüm görevlerin durumu"""
         now = datetime.utcnow()
         return [
