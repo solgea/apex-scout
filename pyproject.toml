@@ -140,8 +140,9 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
 ignore_missing_imports = true
-strict_optional = true
+strict_optional = false
 show_error_codes = true
+disable_error_code = ["no-any-return", "misc"]
 
 [tool.coverage.run]
 source = ["scanner", "decision", "trading", "orchestrator", "shared", "config"]

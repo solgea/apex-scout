@@ -9,6 +9,7 @@ import asyncio
 import json
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
+from typing import Any
 
 import aiohttp
 import websockets
@@ -37,7 +38,7 @@ class PumpFunScanner(BaseScanner):
         self.base_url = getattr(settings, "pumpfun_base_url", "https://frontend-api-v3.pump.fun")
         self.ws_url = "wss://pumpportal.fun/api/data"
         self.session: aiohttp.ClientSession | None = None
-        self.ws: websockets.WebSocketClientProtocol | None = None
+        self.ws: Any | None = None
         self._ws_task: asyncio.Task | None = None
         self._new_token_callback: Callable[[TokenData], Awaitable[None]] | None = None
         self._ws_connected = False

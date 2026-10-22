@@ -8,17 +8,18 @@ import signal
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from config.constants import DecisionAction, PositionStatus
+from config.constants import DecisionAction, OrderSide, PositionStatus
 from config.settings import settings
 from decision.blacklist import BlacklistManager
 from decision.engine import DecisionEngine
 from scanner.dexscreener import DexScreenerScanner
 from scanner.filters import TokenFilter
-from scanner.models import TokenFilterCriteria
+from scanner.models import TokenData, TokenFilterCriteria
 from scanner.pumpfunt import PumpFunScanner
 from shared.database import get_session, init_db
 from shared.logger import get_logger
 from shared.models import Decision, SystemMetrics, Token
+from decision.models import DecisionResult
 from trading.okx_client import OKXDemoClient
 from trading.order_executor import OrderExecutor
 from trading.portfolio import PortfolioManager
@@ -306,11 +307,11 @@ class Orchestrator:
         filtered = self._token_filter.filter_tokens(unique_tokens)
         self.stats.tokens_filtered = len(filtered)
 
-        return filtered
+        return filtered  # type: ignore[return-value]
 
     # ============ DECISION ============
 
-    async def _evaluate_decisions(self, tokens: list[Token]) -> list:
+    async def _evaluate_decisions(self, tokens: list[TokenData]) -> list[DecisionResult]:
         """Token'ları değerlendir"""
         results = self._decision_engine.evaluate_batch(tokens)
 
@@ -434,12 +435,8 @@ class Orchestrator:
                     continue
 
                 # SL/TP hesapla
-                sl_price = self._risk_manager.create_stop_loss_price(
-                    current_price, DecisionAction.PASS
-                )  # BUY side
-                tp_tiers = self._risk_manager.create_take_profit_tiers(
-                    current_price, DecisionAction.PASS
-                )
+                sl_price = self._risk_manager.create_stop_loss_price(current_price, OrderSide.BUY)
+                tp_tiers = self._risk_manager.create_take_profit_tiers(current_price, OrderSide.BUY)
 
                 # TP tiers'ları dict formatına çevir
                 tp_tiers_dict = [
@@ -459,11 +456,9 @@ class Orchestrator:
                     fill_qty = order.filled_size
 
                     # SL/TP fiyatlarını fill price'a göre yeniden hesapla
-                    sl_price = self._risk_manager.create_stop_loss_price(
-                        fill_price, DecisionAction.PASS
-                    )
+                    sl_price = self._risk_manager.create_stop_loss_price(fill_price, OrderSide.BUY)
                     tp_tiers = self._risk_manager.create_take_profit_tiers(
-                        fill_price, DecisionAction.PASS
+                        fill_price, OrderSide.BUY
                     )
                     tp_tiers_dict = [
                         {"profit_pct": t.profit_pct, "sell_pct": t.sell_pct, "triggered": False}
@@ -473,7 +468,7 @@ class Orchestrator:
                     self._position_manager.create_position(
                         token_id=decision.token.id if hasattr(decision.token, "id") else None,
                         inst_id=inst_id,
-                        side=DecisionAction.PASS,  # BUY
+                        side=OrderSide.BUY,
                         entry_price=fill_price,
                         quantity=fill_qty,
                         stop_loss_price=sl_price,

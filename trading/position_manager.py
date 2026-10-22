@@ -59,7 +59,7 @@ class PositionManager:
             stop_loss_price=stop_loss_price,
             take_profit_tiers=take_profit_tiers,
             status=PositionStatus.OPEN,
-            okx_order_id=okx_order_id,
+            okx_pos_id=okx_order_id,
         )
 
         # DB model

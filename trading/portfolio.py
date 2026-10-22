@@ -4,7 +4,7 @@ Portföy takibi, bakiye yönetimi, performans metrikleri.
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 
 from config.constants import PositionStatus
 from shared.database import get_session
@@ -59,7 +59,7 @@ class PortfolioManager:
         self._initial_balance: float | None = None
         self._peak_balance: float = 0.0
         self._daily_start_balance: float | None = None
-        self._daily_start_date: datetime | None = None
+        self._daily_start_date: date | None = None
 
     async def initialize(self):
         """Başlangıç bakiyesini al"""
@@ -169,13 +169,13 @@ class PortfolioManager:
 
             # Max drawdown
             equity_curve = []
-            running = 0
+            running = 0.0
             for pnl in trade_pnls:
                 running += pnl
                 equity_curve.append(running)
 
-            max_dd = 0
-            peak = equity_curve[0] if equity_curve else 0
+            max_dd = 0.0
+            peak = equity_curve[0] if equity_curve else 0.0
             for val in equity_curve:
                 if val > peak:
                     peak = val
@@ -238,7 +238,7 @@ class PortfolioManager:
                         "id": trade.id,
                         "timestamp": trade.timestamp.isoformat(),
                         "symbol": token_sym,
-                        "inst_id": trade.inst_id,
+                        "inst_id": trade.okx_order_id or "",
                         "side": trade.side,
                         "price": trade.price,
                         "quantity": trade.quantity,

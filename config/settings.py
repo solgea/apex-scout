@@ -87,9 +87,9 @@ class Settings(BaseSettings):
     trailing_stop_pct: float = Field(default=10.0, ge=1, le=50, description="Trailing Stop (%)")
     take_profit_tiers: list[TakeProfitTierModel] = Field(
         default=[
-            {"profit_pct": 25.0, "sell_pct": 40.0},
-            {"profit_pct": 45.0, "sell_pct": 40.0},
-            {"profit_pct": 70.0, "sell_pct": 100.0},
+            TakeProfitTierModel(profit_pct=25.0, sell_pct=40.0),
+            TakeProfitTierModel(profit_pct=45.0, sell_pct=40.0),
+            TakeProfitTierModel(profit_pct=70.0, sell_pct=100.0),
         ],
         description="Kademeli TP katmanları",
     )
@@ -155,8 +155,8 @@ class Settings(BaseSettings):
         if not self.take_profit_tiers:
             raise ValueError("En az bir TP katmanı tanımlanmalı")
 
-        prev_profit = 0
-        total_sell = 0
+        prev_profit = 0.0
+        total_sell = 0.0
         for tier in self.take_profit_tiers:
             if tier.profit_pct <= prev_profit:
                 raise ValueError("TP katmanları profit_pct olarak artan sırada olmalı")
@@ -211,7 +211,7 @@ class Settings(BaseSettings):
 
 
 # Global settings instance
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
 
 
 def get_settings() -> Settings:
