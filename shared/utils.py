@@ -26,8 +26,14 @@ def utc_now() -> datetime:
 
 
 def utc_now_iso() -> str:
-    """UTC now as Unix timestamp string (seconds) - OKX preferred format"""
-    return str(int(time.time()))
+    """
+    UTC timestamp in OKX ISO8601 format: "2026-10-22T13:52:23.054Z"
+
+    OKX API sadece bu formatı kabul eder (Unix timestamp reddedilir).
+    Önemli: UTC olmalı, local time + Z çalışmaz.
+    """
+    now = datetime.now(timezone.utc)
+    return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
 
 
 def timestamp_ms() -> int:

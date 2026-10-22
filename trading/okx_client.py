@@ -107,6 +107,22 @@ class OKXDemoClient:
             **self.demo_header,  # ZORUNLU: Demo trading header
         }
 
+    @staticmethod
+    def _build_signed_path(endpoint: str, params: Dict = None) -> str:
+        """
+        İmzalama için request path oluştur.
+        ÖNEMLİ: Query string imzaya DAHİL EDİLMELİ (OKX kuralı).
+        Örn: /api/v5/account/balance?ccy=USDT
+        """
+        if not params:
+            return endpoint
+
+        # Sıralı query string (deterministik imza için)
+        query = "&".join(
+            f"{k}={v}" for k, v in sorted(params.items()) if v is not None
+        )
+        return f"{endpoint}?{query}" if query else endpoint
+
     async def _request(
         self,
         method: str,
@@ -115,17 +131,23 @@ class OKXDemoClient:
         data: Dict = None,
         auth: bool = True
     ) -> Dict:
-        """HTTP isteği gönder - Her retry'de fresh timestamp ile"""
+        """HTTP isteği gönder - Her retry'de fresh timestamp + query string imzası ile"""
         session = await self._get_session()
         url = f"{self.base_url}{endpoint}"
         body = json.dumps(data) if data else ""
+
+        # İMZALANACAK PATH: query string dahil
+        signed_path = self._build_signed_path(endpoint, params)
 
         max_retries = settings.max_retries
         base_delay = settings.retry_backoff_base
 
         for attempt in range(max_retries + 1):
             # Her denemede FRESH timestamp ve signature üret
-            headers = self._get_headers(method, endpoint, body) if auth else {"Content-Type": "application/json"}
+            headers = (
+                self._get_headers(method, signed_path, body)
+                if auth else {"Content-Type": "application/json"}
+            )
 
             try:
                 async with session.request(method, url, params=params, data=body, headers=headers) as resp:
