@@ -26,9 +26,15 @@ log = get_scanner_logger()
 class PumpFunScanner(BaseScanner):
     """Pump.fun API + WebSocket scanner"""
 
+    # Browser-like User-Agent (API 403/530 döndürüyor default UA ile)
+    USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
+
     def __init__(self, filter_criteria: Optional[TokenFilterCriteria] = None):
         super().__init__(filter_criteria, source_name="pumpfunt")
-        self.base_url = getattr(settings, 'pumpfunt_base_url', 'https://frontend-api.pump.fun')
+        self.base_url = getattr(settings, "pumpfun_base_url", "https://frontend-api-v3.pump.fun")
         self.ws_url = "wss://pumpportal.fun/api/data"
         self.session: Optional[aiohttp.ClientSession] = None
         self.ws: Optional[websockets.WebSocketClientProtocol] = None
@@ -41,7 +47,7 @@ class PumpFunScanner(BaseScanner):
     async def __aenter__(self):
         self.session = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=30),
-            headers={"User-Agent": "ApexScout/1.0"},
+            headers={"User-Agent": self.USER_AGENT, "Accept": "application/json"},
         )
         return self
 
@@ -54,7 +60,7 @@ class PumpFunScanner(BaseScanner):
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=30),
-                headers={"User-Agent": "ApexScout/1.0"},
+                headers={"User-Agent": self.USER_AGENT, "Accept": "application/json"},
             )
         return self.session
 
@@ -88,9 +94,10 @@ class PumpFunScanner(BaseScanner):
 
         # Pump.fun API endpoint'leri değişebilir, yaygın olanları dene
         endpoints = [
+            # v3 API - en yeni token'lar (browser UA gerekir)
+            "/coins?offset=0&limit=50&sort=created_timestamp&order=desc&includeNsfw=true",
             "/coins/latest",
             "/coins?offset=0&limit=50&sort=created_timestamp&order=desc",
-            "/tokens/latest",
         ]
 
         for endpoint in endpoints:
@@ -145,21 +152,26 @@ class PumpFunScanner(BaseScanner):
 
             # Likidite hesapla (SOL reserves * SOL price)
             # Pump.fun bonding curve: virtual_sol_reserves * virtual_token_reserves = k
-            virtual_sol = safe_float(item.get("virtual_sol_reserves"), 0)
-            virtual_token = safe_float(item.get("virtual_token_reserves"), 0)
-            real_sol = safe_float(item.get("real_sol_reserves"), 0)
-            real_token = safe_float(item.get("real_token_reserves"), 0)
+            # DİKKAT: reserves LAMPORT cinsinden gelir (1 SOL = 1e9 lamport)
+            virtual_sol = safe_float(item.get("virtual_sol_reserves"), 0) / 1e9
+            real_sol = safe_float(item.get("real_sol_reserves"), 0) / 1e9
 
-            # Yaklaşık likidite (SOL cinsinden * SOL fiyatı ~$150)
+            # Yaklaşık likidite (SOL cinsinden * SOL fiyatı)
             sol_price_usd = 150.0  # Sabit varsayım, gerçekte OKX'ten alınmalı
             liquidity_usd = (virtual_sol + real_sol) * sol_price_usd
 
             # Market cap
-            total_supply = safe_float(item.get("total_supply"), 1_000_000_000)
+            total_supply_raw = safe_float(item.get("total_supply"), 1_000_000_000_000_000)
+            # Pump.fun tokenları 6 decimals kullanır -> gerçek token sayısı
+            total_supply_tokens = total_supply_raw / 1e6
+
             market_cap = safe_float(item.get("market_cap"), 0)
             if market_cap == 0 and liquidity_usd > 0:
                 # Bonding curve market cap tahmini
                 market_cap = liquidity_usd * 2  # Rough estimate
+
+            # Token başına fiyat (USD)
+            price_usd = market_cap / total_supply_tokens if total_supply_tokens > 0 else 0.0
 
             # Yaş
             created_ts = item.get("created_timestamp") or item.get("created_at")
@@ -179,7 +191,7 @@ class PumpFunScanner(BaseScanner):
                 address=mint,
                 name=item.get("name", "Unknown"),
                 symbol=item.get("symbol", "UNK"),
-                price_usd=market_cap / total_supply if total_supply > 0 else 0,
+                price_usd=price_usd,
                 liquidity_usd=liquidity_usd,
                 market_cap=market_cap,
                 volume_24h=0.0,  # Pump.fun genelde 24h vol vermez

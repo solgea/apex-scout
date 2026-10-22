@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     # ============ SCANNER ============
     scan_interval_seconds: int = Field(default=60, ge=10, le=3600, description="Tarama aralığı (saniye)")
     dexscreener_base_url: str = Field(default="https://api.dexscreener.com", description="DexScreener API URL")
-    pumpfun_base_url: str = Field(default="https://frontend-api.pump.fun", description="Pump.fun API URL")
+    pumpfun_base_url: str = Field(default="https://frontend-api-v3.pump.fun", description="Pump.fun API URL (v3)")
     min_liquidity_usd: float = Field(default=5000, ge=0, description="Minimum likidite (USD)")
     max_token_age_hours: int = Field(default=2, ge=1, le=168, description="Maksimum token yaşı (saat)")
     min_volume_24h: float = Field(default=1000, ge=0, description="Minimum 24h hacim (USD)")

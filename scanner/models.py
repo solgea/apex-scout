@@ -87,7 +87,12 @@ class TokenFilterCriteria(BaseModel):
             reasons.append(f"Token çok eski: {age_hours:.1f}h > {self.max_age_hours}h")
 
         if token.volume_24h < self.min_volume_24h:
-            reasons.append(f"Hacim çok düşük: ${token.volume_24h:,.0f} < ${self.min_volume_24h:,.0f}")
+            # Pump.fun 24h hacim vermez (0 = bilgi yok) -> filtreleme
+            from config.constants import TokenSource
+            if token.source == TokenSource.PUMPFUN and token.volume_24h == 0:
+                pass  # Bilgi yok, atlanır
+            else:
+                reasons.append(f"Hacim çok düşük: ${token.volume_24h:,.0f} < ${self.min_volume_24h:,.0f}")
 
         # Holder sayısı kontrolü
         # NOT: holder_count == 0 => "bilgi yok" (DexScreener holder vermez)
