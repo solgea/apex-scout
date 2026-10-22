@@ -75,6 +75,17 @@ class Orchestrator:
         self._order_executor: Optional[OrderExecutor] = None
         self._portfolio: Optional[PortfolioManager] = None
 
+        # Metrik delta takibi (per-cycle değerler için)
+        self._last_metrics_saved = {
+            "tokens_scanned": 0,
+            "tokens_filtered": 0,
+            "decisions_pass": 0,
+            "decisions_watch": 0,
+            "decisions_skip": 0,
+            "trades_executed": 0,
+            "errors": 0,
+        }
+
         # Sinyal handler
         self._setup_signals()
 
@@ -580,24 +591,49 @@ class Orchestrator:
     # ============ METRICS ============
 
     async def _save_metrics(self):
-        """Sistem metriklerini kaydet"""
+        """
+        Sistem metriklerini kaydet.
+        NOT: Her satır PER-CYCLE değerleri tutar (delta), kümülatif değil.
+        Böylece dashboard'da zaman serisi doğru grafiklenir.
+        """
         try:
             portfolio = await self._portfolio.get_snapshot()
             open_positions = self._position_manager.get_open_positions()
 
+            # Önceki kayıttan farkı al (per-cycle delta)
+            prev = self._last_metrics_saved
+            delta_tokens = max(0, self.stats.tokens_scanned - prev["tokens_scanned"])
+            delta_filtered = max(0, self.stats.tokens_filtered - prev["tokens_filtered"])
+            delta_pass = max(0, self.stats.decisions_pass - prev["decisions_pass"])
+            delta_watch = max(0, self.stats.decisions_watch - prev["decisions_watch"])
+            delta_skip = max(0, self.stats.decisions_skip - prev["decisions_skip"])
+            delta_trades = max(0, self.stats.trades_executed - prev["trades_executed"])
+            delta_errors = max(0, self.stats.errors - prev["errors"])
+
+            # Kümülatif sayaçları güncelle
+            self._last_metrics_saved = {
+                "tokens_scanned": self.stats.tokens_scanned,
+                "tokens_filtered": self.stats.tokens_filtered,
+                "decisions_pass": self.stats.decisions_pass,
+                "decisions_watch": self.stats.decisions_watch,
+                "decisions_skip": self.stats.decisions_skip,
+                "trades_executed": self.stats.trades_executed,
+                "errors": self.stats.errors,
+            }
+
             metrics = SystemMetrics(
                 scan_count=1,
-                tokens_found=self.stats.tokens_scanned,
-                tokens_filtered=self.stats.tokens_filtered,
-                tokens_scored=self.stats.decisions_pass + self.stats.decisions_watch + self.stats.decisions_skip,
-                decisions_pass=self.stats.decisions_pass,
-                decisions_watch=self.stats.decisions_watch,
-                decisions_skip=self.stats.decisions_skip,
-                trades_executed=self.stats.trades_executed,
+                tokens_found=delta_tokens,
+                tokens_filtered=delta_filtered,
+                tokens_scored=delta_pass + delta_watch + delta_skip,
+                decisions_pass=delta_pass,
+                decisions_watch=delta_watch,
+                decisions_skip=delta_skip,
+                trades_executed=delta_trades,
                 trades_failed=0,
                 positions_opened=len([p for p in open_positions if p.status == PositionStatus.OPEN]),
                 positions_closed=0,
-                errors_count=self.stats.errors,
+                errors_count=delta_errors,
                 api_latency_ms=0,  # TODO: measure
                 scanner_latency_ms=0,
                 decision_latency_ms=0,
