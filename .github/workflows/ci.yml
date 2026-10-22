@@ -57,6 +57,7 @@ jobs:
           POSITION_SIZE_PCT=10
           STOP_LOSS_PCT=15
           TRAILING_STOP_PCT=10
+          TAKE_PROFIT_TIERS=[{"profit_pct": 25.0, "sell_pct": 40.0}, {"profit_pct": 45.0, "sell_pct": 40.0}, {"profit_pct": 70.0, "sell_pct": 20.0}]
           LOG_LEVEL=INFO
           DB_URL=sqlite:///data/apex_scout.db
           EOF
@@ -109,6 +110,7 @@ jobs:
           POSITION_SIZE_PCT=10
           STOP_LOSS_PCT=15
           TRAILING_STOP_PCT=10
+          TAKE_PROFIT_TIERS=[{"profit_pct": 25.0, "sell_pct": 40.0}, {"profit_pct": 45.0, "sell_pct": 40.0}, {"profit_pct": 70.0, "sell_pct": 20.0}]
           LOG_LEVEL=INFO
           DB_URL=sqlite:///data/apex_scout.db
           EOF
