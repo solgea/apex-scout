@@ -155,5 +155,6 @@ class TestConstants:
 
     def test_okx_demo_header(self):
         from config.constants import OKX_DEMO_HEADER, OKX_DEMO_VALUE
+
         assert OKX_DEMO_HEADER == "x-simulated-trading"
         assert OKX_DEMO_VALUE == "1"

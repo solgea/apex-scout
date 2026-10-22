@@ -51,6 +51,7 @@ class TestRiskManager:
 
     def test_check_portfolio_risk_exceed(self, risk_manager):
         """Portföy risk kontrolü - Aşım"""
+
         # Mevcut pozisyonlar 300 USD, yeni 100 USD = 400/1000 = 40% > 35%
         class MockPos:
             entry_value_usd = 300.0
@@ -62,13 +63,13 @@ class TestRiskManager:
 
     def test_check_max_positions_ok(self, risk_manager):
         """Max pozisyon kontrolü - OK"""
-        positions = [type('P', (), {'status': 'OPEN'})() for _ in range(3)]
+        positions = [type("P", (), {"status": "OPEN"})() for _ in range(3)]
         result = risk_manager.check_max_positions(positions)
         assert result.allowed is True
 
     def test_check_max_positions_exceed(self, risk_manager):
         """Max pozisyon kontrolü - Aşım"""
-        positions = [type('P', (), {'status': 'OPEN'})() for _ in range(4)]
+        positions = [type("P", (), {"status": "OPEN"})() for _ in range(4)]
         result = risk_manager.check_max_positions(positions)
         assert result.allowed is False
         assert "Max open positions" in result.reason
@@ -99,9 +100,9 @@ class TestRiskManager:
         """TP tetikleme fiyatları"""
         prices = risk_manager.get_tp_trigger_prices(100.0, OrderSide.BUY)
         assert len(prices) == 3
-        assert prices[0] == 125.0   # +25%
-        assert prices[1] == 145.0   # +45%
-        assert prices[2] == 170.0   # +70%
+        assert prices[0] == 125.0  # +25%
+        assert prices[1] == 145.0  # +45%
+        assert prices[2] == 170.0  # +70%
 
     def test_check_exit_conditions_stop_loss(self, risk_manager):
         """Stop-Loss çıkış kontrolü"""
@@ -271,11 +272,15 @@ class TestRiskManager:
     def test_get_risk_summary(self, risk_manager):
         """Risk özeti"""
         positions = [
-            type('P', (), {
-                'entry_value_usd': 5000.0,
-                'status': 'OPEN',
-                'unrealized_pnl': 100.0,
-            })(),
+            type(
+                "P",
+                (),
+                {
+                    "entry_value_usd": 5000.0,
+                    "status": "OPEN",
+                    "unrealized_pnl": 100.0,
+                },
+            )(),
         ]
         summary = risk_manager.get_risk_summary(positions, 10000.0)
 

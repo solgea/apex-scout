@@ -33,11 +33,14 @@ def render_token_table(tokens: list):
     with col3:
         min_score = st.slider("Min Skor", 0, 100, 0)
     with col4:
-        sort_by = st.selectbox("Sırala", ["Skor (Azalan)", "Skor (Artan)", "Likidite", "Yaş", "Hacim"])
+        sort_by = st.selectbox(
+            "Sırala", ["Skor (Azalan)", "Skor (Artan)", "Likidite", "Yaş", "Hacim"]
+        )
 
     # Filtrele
     filtered = [
-        t for t in tokens
+        t
+        for t in tokens
         if t["decision_action"] in action_filter
         and t["source"] in source_filter
         and t["decision_score"] >= min_score
@@ -73,24 +76,26 @@ def render_token_table(tokens: list):
         mint_status = "✅" if t["mint_renounced"] else "❌"
         freeze_status = "✅" if t["freeze_renounced"] else "❌"
 
-        df_data.append({
-            "Aksiyon": action_display,
-            "Skor": f"{t['decision_score']:.1f}",
-            "Sembol": t["symbol"],
-            "İsim": t["name"][:20] + "..." if len(t["name"]) > 20 else t["name"],
-            "Adres": t["address"],
-            "Fiyat": f"${t['price_usd']:.8f}" if t['price_usd'] > 0 else "N/A",
-            "Likidite": f"${t['liquidity_usd']:,.0f}",
-            "Market Cap": f"${t['market_cap']:,.0f}",
-            "24h Hacim": f"${t['volume_24h']:,.0f}",
-            "Yaş (saat)": f"{t['age_hours']:.2f}",
-            "Holder": t["holder_count"],
-            "Top10%": f"{t['top_10_pct']:.1f}%",
-            "Mint": mint_status,
-            "Freeze": freeze_status,
-            "Kaynak": t["source"].upper(),
-            "Bulunma": t["discovered_at"].strftime("%H:%M:%S") if t["discovered_at"] else "N/A",
-        })
+        df_data.append(
+            {
+                "Aksiyon": action_display,
+                "Skor": f"{t['decision_score']:.1f}",
+                "Sembol": t["symbol"],
+                "İsim": t["name"][:20] + "..." if len(t["name"]) > 20 else t["name"],
+                "Adres": t["address"],
+                "Fiyat": f"${t['price_usd']:.8f}" if t["price_usd"] > 0 else "N/A",
+                "Likidite": f"${t['liquidity_usd']:,.0f}",
+                "Market Cap": f"${t['market_cap']:,.0f}",
+                "24h Hacim": f"${t['volume_24h']:,.0f}",
+                "Yaş (saat)": f"{t['age_hours']:.2f}",
+                "Holder": t["holder_count"],
+                "Top10%": f"{t['top_10_pct']:.1f}%",
+                "Mint": mint_status,
+                "Freeze": freeze_status,
+                "Kaynak": t["source"].upper(),
+                "Bulunma": t["discovered_at"].strftime("%H:%M:%S") if t["discovered_at"] else "N/A",
+            }
+        )
 
     if df_data:
         df = pd.DataFrame(df_data)

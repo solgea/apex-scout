@@ -244,9 +244,9 @@ class TestDecisionEngine:
             symbol="CRIT",
             price_usd=0.01,
             liquidity_usd=1000,  # 5000 min altı
-            market_cap=200000,   # Yüksek MCAP için yüksek skor
-            volume_24h=100000,   # Yüksek volume
-            age_seconds=300,     # Çok yeni (5 dk)
+            market_cap=200000,  # Yüksek MCAP için yüksek skor
+            volume_24h=100000,  # Yüksek volume
+            age_seconds=300,  # Çok yeni (5 dk)
             mint_authority="",
             freeze_authority="",
             mint_renounced=True,

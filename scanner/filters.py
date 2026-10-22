@@ -91,13 +91,15 @@ class TokenFilter:
         try:
             with get_session() as session:
                 # Süresi dolmamış blacklist entry'leri al
-                entries = session.query(BlacklistEntry).filter(
-                    BlacklistEntry.expires_at > now
-                ).all()
+                entries = (
+                    session.query(BlacklistEntry).filter(BlacklistEntry.expires_at > now).all()
+                )
 
                 self._blacklist_cache = {e.token_address for e in entries}
                 self._blacklist_cache_time = now
-                log.debug(f"[Filter] Blacklist cache refreshed: {len(self._blacklist_cache)} entries")
+                log.debug(
+                    f"[Filter] Blacklist cache refreshed: {len(self._blacklist_cache)} entries"
+                )
         except Exception as e:
             log.warning(f"[Filter] Blacklist cache refresh failed: {e}")
 
@@ -109,9 +111,11 @@ class TokenFilter:
         try:
             with get_session() as session:
                 # Varsa güncelle, yoksa ekle
-                entry = session.query(BlacklistEntry).filter(
-                    BlacklistEntry.token_address == token_address
-                ).first()
+                entry = (
+                    session.query(BlacklistEntry)
+                    .filter(BlacklistEntry.token_address == token_address)
+                    .first()
+                )
 
                 if entry:
                     entry.expires_at = expires_at
@@ -128,7 +132,9 @@ class TokenFilter:
 
                 session.commit()
                 self._blacklist_cache.add(token_address)
-                log.info(f"[Filter] Added to blacklist: {token_symbol} ({token_address[:8]}...) for {duration}h")
+                log.info(
+                    f"[Filter] Added to blacklist: {token_symbol} ({token_address[:8]}...) for {duration}h"
+                )
 
         except Exception as e:
             log.error(f"[Filter] Blacklist add failed: {e}")
@@ -144,9 +150,12 @@ class TokenFilter:
         now = datetime.utcnow()
 
         with get_session() as session:
-            entries = session.query(BlacklistEntry).filter(
-                BlacklistEntry.expires_at > now
-            ).order_by(BlacklistEntry.created_at.desc()).all()
+            entries = (
+                session.query(BlacklistEntry)
+                .filter(BlacklistEntry.expires_at > now)
+                .order_by(BlacklistEntry.created_at.desc())
+                .all()
+            )
 
             return [
                 {
@@ -164,9 +173,9 @@ class TokenFilter:
         try:
             with get_session() as session:
                 now = datetime.utcnow()
-                deleted = session.query(BlacklistEntry).filter(
-                    BlacklistEntry.expires_at <= now
-                ).delete()
+                deleted = (
+                    session.query(BlacklistEntry).filter(BlacklistEntry.expires_at <= now).delete()
+                )
                 session.commit()
                 if deleted:
                     log.info(f"[Filter] Cleared {deleted} expired blacklist entries")

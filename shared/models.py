@@ -6,7 +6,16 @@ Tüm tablolar ve ilişkiler burada tanımlanır.
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import (
-    Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, Index, Enum as SQLEnum
+    Column,
+    Integer,
+    String,
+    Float,
+    DateTime,
+    Boolean,
+    Text,
+    ForeignKey,
+    Index,
+    Enum as SQLEnum,
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects.sqlite import JSON
@@ -17,10 +26,13 @@ from config.constants import DecisionAction, PositionStatus, OrderSide, TokenSou
 
 class Token(Base):
     """Taradığımız token'lar"""
+
     __tablename__ = "tokens"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    address: Mapped[str] = mapped_column(String(44), unique=True, index=True, nullable=False)  # Solana address
+    address: Mapped[str] = mapped_column(
+        String(44), unique=True, index=True, nullable=False
+    )  # Solana address
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
 
@@ -42,10 +54,14 @@ class Token(Base):
     # Kaynak ve zaman
     source: Mapped[str] = mapped_column(SQLEnum(TokenSource), default=TokenSource.DEXSCREENER)
     discovered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
-    last_updated: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_updated: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     # İlişkiler
-    decisions: Mapped[List["Decision"]] = relationship("Decision", back_populates="token", cascade="all, delete-orphan")
+    decisions: Mapped[List["Decision"]] = relationship(
+        "Decision", back_populates="token", cascade="all, delete-orphan"
+    )
     positions: Mapped[List["Position"]] = relationship("Position", back_populates="token")
 
     # İndeksler
@@ -60,13 +76,18 @@ class Token(Base):
 
 class Decision(Base):
     """Karar motoru çıktıları"""
+
     __tablename__ = "decisions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    token_id: Mapped[int] = mapped_column(Integer, ForeignKey("tokens.id", ondelete="CASCADE"), index=True)
+    token_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tokens.id", ondelete="CASCADE"), index=True
+    )
 
     score: Mapped[float] = mapped_column(Float, default=0.0)  # 0-100
-    action: Mapped[str] = mapped_column(SQLEnum(DecisionAction), default=DecisionAction.SKIP, index=True)
+    action: Mapped[str] = mapped_column(
+        SQLEnum(DecisionAction), default=DecisionAction.SKIP, index=True
+    )
     reasons: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Detaylı nedenler
 
     # Skor bileşenleri
@@ -88,10 +109,13 @@ class Decision(Base):
 
 class Position(Base):
     """Açık/kapalı pozisyonlar"""
+
     __tablename__ = "positions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    token_id: Mapped[int] = mapped_column(Integer, ForeignKey("tokens.id", ondelete="SET NULL"), index=True)
+    token_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tokens.id", ondelete="SET NULL"), index=True
+    )
 
     # OKX bilgileri
     okx_inst_id: Mapped[str] = mapped_column(String(30), index=True)  # Örn: "BONK-USDT"
@@ -101,7 +125,9 @@ class Position(Base):
     side: Mapped[str] = mapped_column(SQLEnum(OrderSide), default=OrderSide.BUY)
     entry_price: Mapped[float] = mapped_column(Float, nullable=False)
     quantity: Mapped[float] = mapped_column(Float, nullable=False)  # Token miktarı
-    entry_value_usd: Mapped[float] = mapped_column(Float, nullable=False)  # USD cinsinden giriş değeri
+    entry_value_usd: Mapped[float] = mapped_column(
+        Float, nullable=False
+    )  # USD cinsinden giriş değeri
 
     # Güncel durum
     current_price: Mapped[float] = mapped_column(Float, default=0.0)
@@ -111,34 +137,47 @@ class Position(Base):
 
     # Risk yönetimi
     stop_loss_price: Mapped[float] = mapped_column(Float, nullable=False)
-    take_profit_tiers: Mapped[List[dict]] = mapped_column(JSON, default=list)  # [{"profit_pct": 25, "sell_pct": 40, "triggered": false}, ...]
+    take_profit_tiers: Mapped[List[dict]] = mapped_column(
+        JSON, default=list
+    )  # [{"profit_pct": 25, "sell_pct": 40, "triggered": false}, ...]
     current_tp_tier: Mapped[int] = mapped_column(Integer, default=0)  # Hangi TP tetiklendi
     trailing_stop_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     trailing_activated: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Durum
-    status: Mapped[str] = mapped_column(SQLEnum(PositionStatus), default=PositionStatus.OPEN, index=True)
+    status: Mapped[str] = mapped_column(
+        SQLEnum(PositionStatus), default=PositionStatus.OPEN, index=True
+    )
 
     # Zaman damgaları
     opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
     closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    last_updated: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_updated: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     # İlişkiler
     token: Mapped[Optional["Token"]] = relationship("Token", back_populates="positions")
-    trades: Mapped[List["Trade"]] = relationship("Trade", back_populates="position", cascade="all, delete-orphan")
+    trades: Mapped[List["Trade"]] = relationship(
+        "Trade", back_populates="position", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         token_sym = self.token.symbol if self.token else "N/A"
-        return f"<Position {token_sym} {self.side} {self.status} PnL:{self.unrealized_pnl_pct:.2f}%>"
+        return (
+            f"<Position {token_sym} {self.side} {self.status} PnL:{self.unrealized_pnl_pct:.2f}%>"
+        )
 
 
 class Trade(Base):
     """Gerçekleşen işlemler (fill olan emirler)"""
+
     __tablename__ = "trades"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    position_id: Mapped[int] = mapped_column(Integer, ForeignKey("positions.id", ondelete="CASCADE"), index=True)
+    position_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("positions.id", ondelete="CASCADE"), index=True
+    )
 
     # İşlem detayları
     side: Mapped[str] = mapped_column(SQLEnum(OrderSide), nullable=False)
@@ -168,6 +207,7 @@ class Trade(Base):
 
 class SystemMetrics(Base):
     """Sistem metrikleri ve sağlık kontrolü"""
+
     __tablename__ = "system_metrics"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -209,6 +249,7 @@ class SystemMetrics(Base):
 
 class BlacklistEntry(Base):
     """Blacklist kayıtları (SL yiyen token'lar)"""
+
     __tablename__ = "blacklist"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

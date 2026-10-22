@@ -42,15 +42,24 @@ def render_performance(trades: list, positions: list, metrics: list):
     col1, col2, col3, col4, col5, col6 = st.columns(6)
 
     with col1:
-        st.metric("Toplam PnL", f"${total_pnl:,.2f}",
-                  delta=f"${total_unrealized:+,.2f}" if total_unrealized != 0 else None,
-                  delta_color="normal" if total_pnl >= 0 else "inverse")
+        st.metric(
+            "Toplam PnL",
+            f"${total_pnl:,.2f}",
+            delta=f"${total_unrealized:+,.2f}" if total_unrealized != 0 else None,
+            delta_color="normal" if total_pnl >= 0 else "inverse",
+        )
     with col2:
-        st.metric("Gerçekleşen", f"${total_realized:,.2f}",
-                  delta_color="normal" if total_realized >= 0 else "inverse")
+        st.metric(
+            "Gerçekleşen",
+            f"${total_realized:,.2f}",
+            delta_color="normal" if total_realized >= 0 else "inverse",
+        )
     with col3:
-        st.metric("Açık", f"${total_unrealized:,.2f}",
-                  delta_color="normal" if total_unrealized >= 0 else "inverse")
+        st.metric(
+            "Açık",
+            f"${total_unrealized:,.2f}",
+            delta_color="normal" if total_unrealized >= 0 else "inverse",
+        )
     with col4:
         st.metric("Win Rate", f"{win_rate:.1f}%")
     with col5:
@@ -99,7 +108,9 @@ def render_performance(trades: list, positions: list, metrics: list):
         best_open = sorted(open_pos, key=lambda x: x["unrealized_pnl_pct"], reverse=True)[:5]
         if best_open:
             for i, p in enumerate(best_open, 1):
-                st.write(f"{i}. {p['symbol']}: ${p['unrealized_pnl']:+,.2f} ({p['unrealized_pnl_pct']:+.2f}%)")
+                st.write(
+                    f"{i}. {p['symbol']}: ${p['unrealized_pnl']:+,.2f} ({p['unrealized_pnl_pct']:+.2f}%)"
+                )
         else:
             st.write("Açık pozisyon yok")
 
@@ -108,7 +119,9 @@ def render_performance(trades: list, positions: list, metrics: list):
         worst_open = sorted(open_pos, key=lambda x: x["unrealized_pnl_pct"])[:5]
         if worst_open:
             for i, p in enumerate(worst_open, 1):
-                st.write(f"{i}. {p['symbol']}: ${p['unrealized_pnl']:+,.2f} ({p['unrealized_pnl_pct']:+.2f}%)")
+                st.write(
+                    f"{i}. {p['symbol']}: ${p['unrealized_pnl']:+,.2f} ({p['unrealized_pnl_pct']:+.2f}%)"
+                )
         else:
             st.write("Açık pozisyon yok")
 
@@ -147,23 +160,25 @@ def render_equity_chart(metrics: list):
     values = [m["total_portfolio_value"] for m in sorted_metrics]
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=timestamps,
-        y=values,
-        mode='lines',
-        name='Portföy Değeri',
-        line=dict(color='#1f77b4', width=2),
-        fill='tozeroy',
-        fillcolor='rgba(31, 119, 180, 0.1)',
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=values,
+            mode="lines",
+            name="Portföy Değeri",
+            line=dict(color="#1f77b4", width=2),
+            fill="tozeroy",
+            fillcolor="rgba(31, 119, 180, 0.1)",
+        )
+    )
 
     fig.update_layout(
         title="Portföy Değeri (USDT)",
         xaxis_title="Zaman",
         yaxis_title="Değer (USDT)",
         height=350,
-        hovermode='x unified',
-        template='plotly_white',
+        hovermode="x unified",
+        template="plotly_white",
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -180,9 +195,11 @@ def render_risk_metrics(positions: list):
     total_exposure = sum(p["entry_value_usd"] for p in open_pos)
     max_single = max(p["entry_value_usd"] for p in open_pos)
     avg_sl_dist = sum(
-        ((p["current_price"] - p["stop_loss_price"]) / p["current_price"] * 100)
-        if p["side"] == "buy"
-        else ((p["stop_loss_price"] - p["current_price"]) / p["current_price"] * 100)
+        (
+            ((p["current_price"] - p["stop_loss_price"]) / p["current_price"] * 100)
+            if p["side"] == "buy"
+            else ((p["stop_loss_price"] - p["current_price"]) / p["current_price"] * 100)
+        )
         for p in open_pos
     ) / len(open_pos)
 
@@ -203,13 +220,19 @@ def render_risk_metrics(positions: list):
     st.markdown("#### Pozisyon Bazlı Risk")
     risk_data = []
     for p in open_pos:
-        sl_dist = ((p["current_price"] - p["stop_loss_price"]) / p["current_price"] * 100) if p["side"] == "buy" else ((p["stop_loss_price"] - p["current_price"]) / p["current_price"] * 100)
-        risk_data.append({
-            "Sembol": p["symbol"],
-            "Değer": f"${p['entry_value_usd']:,.2f}",
-            "SL Mesafesi": f"{sl_dist:.1f}%",
-            "TP Kademe": p["current_tp_tier"],
-            "Trailing": "✅" if p.get("trailing_activated") else "❌",
-        })
+        sl_dist = (
+            ((p["current_price"] - p["stop_loss_price"]) / p["current_price"] * 100)
+            if p["side"] == "buy"
+            else ((p["stop_loss_price"] - p["current_price"]) / p["current_price"] * 100)
+        )
+        risk_data.append(
+            {
+                "Sembol": p["symbol"],
+                "Değer": f"${p['entry_value_usd']:,.2f}",
+                "SL Mesafesi": f"{sl_dist:.1f}%",
+                "TP Kademe": p["current_tp_tier"],
+                "Trailing": "✅" if p.get("trailing_activated") else "❌",
+            }
+        )
 
     st.dataframe(pd.DataFrame(risk_data), use_container_width=True, hide_index=True)

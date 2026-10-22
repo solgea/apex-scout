@@ -14,6 +14,7 @@ from config.settings import settings
 
 class Base(DeclarativeBase):
     """Base class for all models"""
+
     pass
 
 
@@ -43,6 +44,7 @@ def create_db_engine():
             # Senkron: normal (NORMAL WAL ile daha hızlı, güvenli yeterli)
             cursor.execute("PRAGMA synchronous=NORMAL")
             cursor.close()
+
     else:
         # PostgreSQL, MySQL vb. için
         engine = create_engine(

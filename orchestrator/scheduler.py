@@ -16,6 +16,7 @@ log = get_logger(__name__)
 @dataclass
 class ScheduledTask:
     """Zamanlanmış görev"""
+
     name: str
     coro_func: Callable[[], Awaitable[None]]
     interval_seconds: float

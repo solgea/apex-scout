@@ -89,7 +89,9 @@ class PositionManager:
         self._positions[position.id] = position
         self._positions_by_inst[inst_id] = position
 
-        log.info(f"[Position] Created: {inst_id} {side.value} {quantity:.6f} @ {entry_price:.6f} (ID: {position.id})")
+        log.info(
+            f"[Position] Created: {inst_id} {side.value} {quantity:.6f} @ {entry_price:.6f} (ID: {position.id})"
+        )
         return position
 
     # ============ READ ============
@@ -134,7 +136,9 @@ class PositionManager:
                 position.update_price(price)
                 self._sync_to_db(position)
 
-    def apply_tp_fill(self, position_id: int, tp_tier_index: int, fill_price: float, fill_qty: float) -> bool:
+    def apply_tp_fill(
+        self, position_id: int, tp_tier_index: int, fill_price: float, fill_qty: float
+    ) -> bool:
         """TP fill uygula"""
         position = self._positions.get(position_id)
         if not position:
@@ -142,8 +146,14 @@ class PositionManager:
 
         self.risk_manager.update_position_after_tp(position, tp_tier_index, fill_price, fill_qty)
         self._sync_to_db(position)
-        self._record_trade(position, ModelOrderSide.SELL if position.side == ModelOrderSide.BUY else ModelOrderSide.BUY,
-                          fill_price, fill_qty, is_take_profit=True, tp_tier_index=tp_tier_index)
+        self._record_trade(
+            position,
+            ModelOrderSide.SELL if position.side == ModelOrderSide.BUY else ModelOrderSide.BUY,
+            fill_price,
+            fill_qty,
+            is_take_profit=True,
+            tp_tier_index=tp_tier_index,
+        )
         return True
 
     def apply_sl_fill(self, position_id: int, fill_price: float, fill_qty: float) -> bool:
@@ -154,8 +164,13 @@ class PositionManager:
 
         self.risk_manager.update_position_after_sl(position, fill_price, fill_qty)
         self._sync_to_db(position)
-        self._record_trade(position, ModelOrderSide.SELL if position.side == ModelOrderSide.BUY else ModelOrderSide.BUY,
-                          fill_price, fill_qty, is_stop_loss=True)
+        self._record_trade(
+            position,
+            ModelOrderSide.SELL if position.side == ModelOrderSide.BUY else ModelOrderSide.BUY,
+            fill_price,
+            fill_qty,
+            is_stop_loss=True,
+        )
         return True
 
     def apply_trailing_fill(self, position_id: int, fill_price: float, fill_qty: float) -> bool:
@@ -166,8 +181,13 @@ class PositionManager:
 
         self.risk_manager.update_position_after_trailing(position, fill_price, fill_qty)
         self._sync_to_db(position)
-        self._record_trade(position, ModelOrderSide.SELL if position.side == ModelOrderSide.BUY else ModelOrderSide.BUY,
-                          fill_price, fill_qty, is_trailing_stop=True)
+        self._record_trade(
+            position,
+            ModelOrderSide.SELL if position.side == ModelOrderSide.BUY else ModelOrderSide.BUY,
+            fill_price,
+            fill_qty,
+            is_trailing_stop=True,
+        )
         return True
 
     def close_position(self, position_id: int, close_price: float, reason: str = "MANUAL") -> bool:
@@ -181,8 +201,11 @@ class PositionManager:
         if remaining_qty <= 0:
             return False
 
-        pnl = (close_price - position.entry_price) * remaining_qty if position.side == OrderSide.BUY \
+        pnl = (
+            (close_price - position.entry_price) * remaining_qty
+            if position.side == OrderSide.BUY
             else (position.entry_price - close_price) * remaining_qty
+        )
 
         position.quantity = 0
         position.realized_pnl += pnl
@@ -191,8 +214,12 @@ class PositionManager:
         position.current_price = close_price
 
         self._sync_to_db(position)
-        self._record_trade(position, ModelOrderSide.SELL if position.side == ModelOrderSide.BUY else ModelOrderSide.BUY,
-                          close_price, remaining_qty)
+        self._record_trade(
+            position,
+            ModelOrderSide.SELL if position.side == ModelOrderSide.BUY else ModelOrderSide.BUY,
+            close_price,
+            remaining_qty,
+        )
         return True
 
     # ============ SYNC ============
@@ -253,9 +280,11 @@ class PositionManager:
     def load_from_db(self) -> int:
         """Başlangıçta DB'den açık pozisyonları yükle"""
         with get_session() as session:
-            db_positions = session.query(DBPosition).filter(
-                DBPosition.status.in_([PositionStatus.OPEN, PositionStatus.PARTIAL])
-            ).all()
+            db_positions = (
+                session.query(DBPosition)
+                .filter(DBPosition.status.in_([PositionStatus.OPEN, PositionStatus.PARTIAL]))
+                .all()
+            )
 
             count = 0
             for db_pos in db_positions:

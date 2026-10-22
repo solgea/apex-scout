@@ -35,7 +35,8 @@ st.set_page_config(
 )
 
 # Custom CSS
-st.markdown("""
+st.markdown(
+    """
 <style>
     .main-header {
         font-size: 2.5rem;
@@ -59,7 +60,9 @@ st.markdown("""
     .negative { color: #dc3545; }
     .neutral { color: #6c757d; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 def init_session_state():
@@ -84,28 +87,35 @@ def get_tokens(limit: int = 100) -> List[Dict]:
         result = []
         for t in tokens:
             # Son karar
-            decision = session.query(Decision).filter(Decision.token_id == t.id).order_by(Decision.created_at.desc()).first()
-            result.append({
-                "id": t.id,
-                "symbol": t.symbol,
-                "name": t.name,
-                "address": t.address[:12] + "...",
-                "full_address": t.address,
-                "price_usd": t.price_usd,
-                "liquidity_usd": t.liquidity_usd,
-                "market_cap": t.market_cap,
-                "volume_24h": t.volume_24h,
-                "age_hours": round(t.age_seconds / 3600, 2),
-                "holder_count": t.holder_count,
-                "top_10_pct": t.top_10_holder_pct,
-                "mint_renounced": t.mint_renounced,
-                "freeze_renounced": t.freeze_renounced,
-                "source": t.source.value,
-                "discovered_at": t.discovered_at,
-                "decision_score": decision.score if decision else 0,
-                "decision_action": decision.action.value if decision else "PENDING",
-                "decision_reasons": decision.reasons if decision else [],
-            })
+            decision = (
+                session.query(Decision)
+                .filter(Decision.token_id == t.id)
+                .order_by(Decision.created_at.desc())
+                .first()
+            )
+            result.append(
+                {
+                    "id": t.id,
+                    "symbol": t.symbol,
+                    "name": t.name,
+                    "address": t.address[:12] + "...",
+                    "full_address": t.address,
+                    "price_usd": t.price_usd,
+                    "liquidity_usd": t.liquidity_usd,
+                    "market_cap": t.market_cap,
+                    "volume_24h": t.volume_24h,
+                    "age_hours": round(t.age_seconds / 3600, 2),
+                    "holder_count": t.holder_count,
+                    "top_10_pct": t.top_10_holder_pct,
+                    "mint_renounced": t.mint_renounced,
+                    "freeze_renounced": t.freeze_renounced,
+                    "source": t.source.value,
+                    "discovered_at": t.discovered_at,
+                    "decision_score": decision.score if decision else 0,
+                    "decision_action": decision.action.value if decision else "PENDING",
+                    "decision_reasons": decision.reasons if decision else [],
+                }
+            )
         return result
 
 
@@ -116,27 +126,31 @@ def get_positions() -> List[Dict]:
         positions = session.query(Position).order_by(Position.opened_at.desc()).all()
         result = []
         for p in positions:
-            token = session.query(Token).filter(Token.id == p.token_id).first() if p.token_id else None
-            result.append({
-                "id": p.id,
-                "inst_id": p.okx_inst_id,
-                "symbol": token.symbol if token else p.okx_inst_id.replace("-USDT", ""),
-                "side": p.side,
-                "entry_price": p.entry_price,
-                "current_price": p.current_price,
-                "quantity": p.quantity,
-                "entry_value_usd": p.entry_value_usd,
-                "unrealized_pnl": p.unrealized_pnl,
-                "unrealized_pnl_pct": p.unrealized_pnl_pct,
-                "realized_pnl": p.realized_pnl,
-                "stop_loss_price": p.stop_loss_price,
-                "trailing_stop_price": p.trailing_stop_price,
-                "current_tp_tier": p.current_tp_tier,
-                "take_profit_tiers": p.take_profit_tiers or [],
-                "status": p.status,
-                "opened_at": p.opened_at,
-                "closed_at": p.closed_at,
-            })
+            token = (
+                session.query(Token).filter(Token.id == p.token_id).first() if p.token_id else None
+            )
+            result.append(
+                {
+                    "id": p.id,
+                    "inst_id": p.okx_inst_id,
+                    "symbol": token.symbol if token else p.okx_inst_id.replace("-USDT", ""),
+                    "side": p.side,
+                    "entry_price": p.entry_price,
+                    "current_price": p.current_price,
+                    "quantity": p.quantity,
+                    "entry_value_usd": p.entry_value_usd,
+                    "unrealized_pnl": p.unrealized_pnl,
+                    "unrealized_pnl_pct": p.unrealized_pnl_pct,
+                    "realized_pnl": p.realized_pnl,
+                    "stop_loss_price": p.stop_loss_price,
+                    "trailing_stop_price": p.trailing_stop_price,
+                    "current_tp_tier": p.current_tp_tier,
+                    "take_profit_tiers": p.take_profit_tiers or [],
+                    "status": p.status,
+                    "opened_at": p.opened_at,
+                    "closed_at": p.closed_at,
+                }
+            )
         return result
 
 
@@ -148,21 +162,27 @@ def get_trades(limit: int = 200) -> List[Dict]:
         result = []
         for trade in trades:
             pos = session.query(Position).filter(Position.id == trade.position_id).first()
-            token = session.query(Token).filter(Token.id == pos.token_id).first() if pos and pos.token_id else None
-            result.append({
-                "id": trade.id,
-                "timestamp": trade.timestamp,
-                "symbol": token.symbol if token else "N/A",
-                "inst_id": trade.inst_id,
-                "side": trade.side,
-                "price": trade.price,
-                "quantity": trade.quantity,
-                "fee": trade.fee,
-                "is_take_profit": trade.is_take_profit,
-                "is_stop_loss": trade.is_stop_loss,
-                "is_trailing_stop": trade.is_trailing_stop,
-                "tp_tier_index": trade.tp_tier_index,
-            })
+            token = (
+                session.query(Token).filter(Token.id == pos.token_id).first()
+                if pos and pos.token_id
+                else None
+            )
+            result.append(
+                {
+                    "id": trade.id,
+                    "timestamp": trade.timestamp,
+                    "symbol": token.symbol if token else "N/A",
+                    "inst_id": trade.inst_id,
+                    "side": trade.side,
+                    "price": trade.price,
+                    "quantity": trade.quantity,
+                    "fee": trade.fee,
+                    "is_take_profit": trade.is_take_profit,
+                    "is_stop_loss": trade.is_stop_loss,
+                    "is_trailing_stop": trade.is_trailing_stop,
+                    "tp_tier_index": trade.tp_tier_index,
+                }
+            )
         return result
 
 
@@ -170,7 +190,9 @@ def get_trades(limit: int = 200) -> List[Dict]:
 def get_metrics(limit: int = 100) -> List[Dict]:
     """Sistem metrikleri"""
     with get_session() as session:
-        metrics = session.query(SystemMetrics).order_by(SystemMetrics.timestamp.desc()).limit(limit).all()
+        metrics = (
+            session.query(SystemMetrics).order_by(SystemMetrics.timestamp.desc()).limit(limit).all()
+        )
         return [
             {
                 "timestamp": m.timestamp,
@@ -193,16 +215,21 @@ def get_metrics(limit: int = 100) -> List[Dict]:
 def get_blacklist() -> List[Dict]:
     """Blacklist"""
     with get_session() as session:
-        entries = session.query(BlacklistEntry).filter(
-            BlacklistEntry.expires_at > datetime.utcnow()
-        ).order_by(BlacklistEntry.created_at.desc()).all()
+        entries = (
+            session.query(BlacklistEntry)
+            .filter(BlacklistEntry.expires_at > datetime.utcnow())
+            .order_by(BlacklistEntry.created_at.desc())
+            .all()
+        )
         return [
             {
                 "symbol": e.token_symbol,
                 "address": e.token_address[:12] + "...",
                 "reason": e.reason,
                 "expires_at": e.expires_at,
-                "remaining_hours": round((e.expires_at - datetime.utcnow()).total_seconds() / 3600, 1),
+                "remaining_hours": round(
+                    (e.expires_at - datetime.utcnow()).total_seconds() / 3600, 1
+                ),
             }
             for e in entries
         ]
@@ -222,7 +249,9 @@ def render_header():
             "PAUSED": "status-paused",
             "STOPPED": "status-stopped",
         }.get(status, "status-stopped")
-        st.markdown(f"**Sistem:** <span class='{status_class}'>{status}</span>", unsafe_allow_html=True)
+        st.markdown(
+            f"**Sistem:** <span class='{status_class}'>{status}</span>", unsafe_allow_html=True
+        )
 
     with col2:
         last_refresh = st.session_state.get("last_refresh", datetime.utcnow())
@@ -257,20 +286,37 @@ def render_metrics_row():
     col1, col2, col3, col4, col5, col6 = st.columns(6)
 
     with col1:
-        st.metric("Toplam Değer", f"${total_realized + total_unrealized:,.2f}",
-                  delta=f"{total_unrealized:+,.2f}" if total_unrealized != 0 else None)
+        st.metric(
+            "Toplam Değer",
+            f"${total_realized + total_unrealized:,.2f}",
+            delta=f"{total_unrealized:+,.2f}" if total_unrealized != 0 else None,
+        )
 
     with col2:
-        st.metric("Gerçekleşen K/Z", f"${total_realized:,.2f}",
-                  delta_color="normal" if total_realized >= 0 else "inverse")
+        st.metric(
+            "Gerçekleşen K/Z",
+            f"${total_realized:,.2f}",
+            delta_color="normal" if total_realized >= 0 else "inverse",
+        )
 
     with col3:
-        st.metric("Açık K/Z", f"${total_unrealized:,.2f}",
-                  delta_color="normal" if total_unrealized >= 0 else "inverse")
+        st.metric(
+            "Açık K/Z",
+            f"${total_unrealized:,.2f}",
+            delta_color="normal" if total_unrealized >= 0 else "inverse",
+        )
 
     with col4:
-        win_trades = len([t for t in trades if (t.get("is_take_profit") or t.get("is_trailing_stop"))])
-        total_trades = len([t for t in trades if t.get("is_take_profit") or t.get("is_stop_loss") or t.get("is_trailing_stop")])
+        win_trades = len(
+            [t for t in trades if (t.get("is_take_profit") or t.get("is_trailing_stop"))]
+        )
+        total_trades = len(
+            [
+                t
+                for t in trades
+                if t.get("is_take_profit") or t.get("is_stop_loss") or t.get("is_trailing_stop")
+            ]
+        )
         win_rate = (win_trades / total_trades * 100) if total_trades > 0 else 0
         st.metric("Win Rate", f"{win_rate:.1f}%")
 
@@ -284,14 +330,16 @@ def render_metrics_row():
 
 def render_main_tabs():
     """Ana sekmeler"""
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "🔍 Token Tarama",
-        "📊 Pozisyonlar",
-        "📜 İşlem Geçmişi",
-        "📈 Performans",
-        "⚙️ Sistem Durumu",
-        "🚫 Blacklist",
-    ])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+        [
+            "🔍 Token Tarama",
+            "📊 Pozisyonlar",
+            "📜 İşlem Geçmişi",
+            "📈 Performans",
+            "⚙️ Sistem Durumu",
+            "🚫 Blacklist",
+        ]
+    )
 
     with tab1:
         render_token_table(get_tokens())

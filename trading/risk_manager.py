@@ -9,7 +9,10 @@ from datetime import datetime
 
 from shared.logger import get_logger
 from shared.exceptions import (
-    RiskError, MaxPositionsExceededError, MaxRiskExceededError, PositionSizeError
+    RiskError,
+    MaxPositionsExceededError,
+    MaxRiskExceededError,
+    PositionSizeError,
 )
 from config.settings import settings
 from config.constants import OrderSide, PositionStatus
@@ -21,14 +24,16 @@ log = get_logger(__name__)
 @dataclass
 class TPTier:
     """Take-Profit katmanı"""
-    profit_pct: float      # Hedef kâr %
-    sell_pct: float        # Bu kademede satılacak %
+
+    profit_pct: float  # Hedef kâr %
+    sell_pct: float  # Bu kademede satılacak %
     triggered: bool = False
 
 
 @dataclass
 class RiskCheckResult:
     """Risk kontrol sonucu"""
+
     allowed: bool
     reason: str = ""
     max_size_usd: float = 0.0
@@ -55,7 +60,9 @@ class RiskManager:
 
     # ============ POSITION SIZING ============
 
-    def calculate_position_size(self, available_balance: float, entry_price: float) -> Tuple[float, float]:
+    def calculate_position_size(
+        self, available_balance: float, entry_price: float
+    ) -> Tuple[float, float]:
         """
         Pozisyon boyutunu hesapla.
         Returns: (quantity, position_value_usd)
@@ -75,7 +82,9 @@ class RiskManager:
 
         return quantity, position_value
 
-    def check_position_size(self, position_value_usd: float, available_balance: float) -> RiskCheckResult:
+    def check_position_size(
+        self, position_value_usd: float, available_balance: float
+    ) -> RiskCheckResult:
         """Pozisyon boyutu risk kontrolü"""
         max_allowed = available_balance * (self.position_size_pct / 100) * 1.1  # %10 tolerans
 
@@ -111,10 +120,15 @@ class RiskManager:
             return RiskCheckResult(
                 allowed=False,
                 reason=f"Portfolio risk would be {exposure_pct:.1f}% > {self.max_portfolio_risk_pct}%",
-                max_size_usd=total_portfolio_value * (self.max_portfolio_risk_pct / 100) - current_exposure,
+                max_size_usd=total_portfolio_value * (self.max_portfolio_risk_pct / 100)
+                - current_exposure,
             )
 
-        return RiskCheckResult(allowed=True, max_size_usd=total_portfolio_value * (self.max_portfolio_risk_pct / 100) - current_exposure)
+        return RiskCheckResult(
+            allowed=True,
+            max_size_usd=total_portfolio_value * (self.max_portfolio_risk_pct / 100)
+            - current_exposure,
+        )
 
     def check_max_positions(self, current_positions: List[Position]) -> RiskCheckResult:
         """Maksimum pozisyon sayısı kontrolü"""
@@ -146,11 +160,13 @@ class RiskManager:
             else:
                 trigger_price = entry_price * (1 - tp["profit_pct"] / 100)
 
-            tiers.append(TPTier(
-                profit_pct=tp["profit_pct"],
-                sell_pct=tp["sell_pct"],
-                triggered=False,
-            ))
+            tiers.append(
+                TPTier(
+                    profit_pct=tp["profit_pct"],
+                    sell_pct=tp["sell_pct"],
+                    triggered=False,
+                )
+            )
         return tiers
 
     def get_tp_trigger_prices(self, entry_price: float, side: OrderSide) -> List[float]:
@@ -198,15 +214,20 @@ class RiskManager:
         else:
             return current_price >= position.stop_loss_price
 
-    def _check_take_profit(self, position: Position, current_price: float) -> Optional[Tuple[str, float, int]]:
+    def _check_take_profit(
+        self, position: Position, current_price: float
+    ) -> Optional[Tuple[str, float, int]]:
         """Take-Profit katmanları kontrolü"""
         for i, tier in enumerate(position.take_profit_tiers):
             if tier.get("triggered"):
                 continue
 
             profit_pct = tier["profit_pct"]
-            trigger_price = position.entry_price * (1 + profit_pct / 100) if position.side == OrderSide.BUY \
+            trigger_price = (
+                position.entry_price * (1 + profit_pct / 100)
+                if position.side == OrderSide.BUY
                 else position.entry_price * (1 - profit_pct / 100)
+            )
 
             if position.side == OrderSide.BUY:
                 triggered = current_price >= trigger_price
@@ -218,7 +239,9 @@ class RiskManager:
 
         return None
 
-    def _check_trailing_stop(self, position: Position, current_price: float) -> Optional[Tuple[str, float, int]]:
+    def _check_trailing_stop(
+        self, position: Position, current_price: float
+    ) -> Optional[Tuple[str, float, int]]:
         """Trailing Stop kontrolü"""
         # Trailing sadece ilk TP sonrası aktif olur
         if not position.trailing_activated:
@@ -227,11 +250,17 @@ class RiskManager:
             if first_tp_triggered:
                 # Trailing'i en yüksek/alçak fiyattan başlat
                 if position.side == OrderSide.BUY:
-                    position.trailing_stop_price = current_price * (1 - self.trailing_stop_pct / 100)
+                    position.trailing_stop_price = current_price * (
+                        1 - self.trailing_stop_pct / 100
+                    )
                 else:
-                    position.trailing_stop_price = current_price * (1 + self.trailing_stop_pct / 100)
+                    position.trailing_stop_price = current_price * (
+                        1 + self.trailing_stop_pct / 100
+                    )
                 position.trailing_activated = True
-                log.info(f"[Risk] Trailing activated for {position.inst_id} at {position.trailing_stop_price:.6f}")
+                log.info(
+                    f"[Risk] Trailing activated for {position.inst_id} at {position.trailing_stop_price:.6f}"
+                )
                 return None  # Bu tick'te tetikleme yok
 
         # Trailing aktifse kontrol et
@@ -256,7 +285,9 @@ class RiskManager:
 
         return None
 
-    def update_position_after_tp(self, position: Position, tp_tier_index: int, fill_price: float, fill_qty: float):
+    def update_position_after_tp(
+        self, position: Position, tp_tier_index: int, fill_price: float, fill_qty: float
+    ):
         """TP fill sonrası pozisyonu güncelle"""
         if tp_tier_index < len(position.take_profit_tiers):
             position.take_profit_tiers[tp_tier_index]["triggered"] = True
@@ -266,8 +297,11 @@ class RiskManager:
 
         position.current_tp_tier = tp_tier_index + 1
         position.quantity -= fill_qty
-        position.realized_pnl += (fill_price - position.entry_price) * fill_qty if position.side == OrderSide.BUY \
+        position.realized_pnl += (
+            (fill_price - position.entry_price) * fill_qty
+            if position.side == OrderSide.BUY
             else (position.entry_price - fill_price) * fill_qty
+        )
 
         # Kalan miktar 0 ise pozisyon kapandı
         if position.quantity <= 0.000001:
@@ -278,15 +312,23 @@ class RiskManager:
     def update_position_after_sl(self, position: Position, fill_price: float, fill_qty: float):
         """SL fill sonrası pozisyonu güncelle"""
         position.quantity -= fill_qty
-        position.realized_pnl += (fill_price - position.entry_price) * fill_qty if position.side == OrderSide.BUY \
+        position.realized_pnl += (
+            (fill_price - position.entry_price) * fill_qty
+            if position.side == OrderSide.BUY
             else (position.entry_price - fill_price) * fill_qty
+        )
         position.status = PositionStatus.STOPPED_OUT
 
-    def update_position_after_trailing(self, position: Position, fill_price: float, fill_qty: float):
+    def update_position_after_trailing(
+        self, position: Position, fill_price: float, fill_qty: float
+    ):
         """Trailing fill sonrası pozisyonu güncelle"""
         position.quantity -= fill_qty
-        position.realized_pnl += (fill_price - position.entry_price) * fill_qty if position.side == OrderSide.BUY \
+        position.realized_pnl += (
+            (fill_price - position.entry_price) * fill_qty
+            if position.side == OrderSide.BUY
             else (position.entry_price - fill_price) * fill_qty
+        )
         position.status = PositionStatus.TRAILING_CLOSED
 
     # ============ ORDER CREATION HELPERS ============

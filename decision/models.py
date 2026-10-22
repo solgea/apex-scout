@@ -12,12 +12,15 @@ from scanner.models import TokenData
 
 class ScoreBreakdown(BaseModel):
     """Skor bileşenleri detayı"""
+
     liquidity: float = Field(default=0.0, ge=0, le=100, description="Likidite skoru (0-100)")
     volume: float = Field(default=0.0, ge=0, le=100, description="Hacim skoru (0-100)")
     age: float = Field(default=0.0, ge=0, le=100, description="Yaş skoru (0-100)")
     mcap: float = Field(default=0.0, ge=0, le=100, description="Market cap skoru (0-100)")
     mint_freeze: float = Field(default=0.0, ge=0, le=100, description="Mint/Freeze skoru (0-100)")
-    holder_dist: float = Field(default=0.0, ge=0, le=100, description="Holder dağılımı skoru (0-100)")
+    holder_dist: float = Field(
+        default=0.0, ge=0, le=100, description="Holder dağılımı skoru (0-100)"
+    )
 
     def total(self, weights: Dict[str, float]) -> float:
         """Ağırlıklı toplam skor"""
@@ -33,6 +36,7 @@ class ScoreBreakdown(BaseModel):
 
 class DecisionResult(BaseModel):
     """Karar motoru sonucu"""
+
     token: TokenData
     score: float = Field(default=0.0, ge=0, le=100, description="Toplam skor (0-100)")
     action: DecisionAction = Field(default=DecisionAction.SKIP, description="PASS/WATCH/SKIP")
@@ -57,6 +61,7 @@ class DecisionResult(BaseModel):
 
 class DecisionBatch(BaseModel):
     """Toplu karar sonucu"""
+
     results: List[DecisionResult] = Field(default_factory=list)
     scan_duration_ms: float = 0.0
     timestamp: datetime = Field(default_factory=datetime.utcnow)

@@ -20,6 +20,7 @@ log = get_logger(__name__)
 @dataclass
 class HealthStatus:
     """Sağlık durumu"""
+
     healthy: bool = True
     checks: Dict[str, bool] = field(default_factory=dict)
     messages: Dict[str, str] = field(default_factory=dict)
@@ -136,6 +137,7 @@ class HealthMonitor:
         """Veritabanı bağlantısı"""
         try:
             from sqlalchemy import text
+
             with get_session() as session:
                 session.execute(text("SELECT 1"))
             return True, "Database connection OK"
@@ -151,7 +153,10 @@ class HealthMonitor:
             pct_used = (disk.used / disk.total) * 100
 
             if pct_used > 90:
-                return False, f"Disk usage critical: {pct_used:.1f}% ({free_gb:.1f}GB free of {total_gb:.1f}GB)"
+                return (
+                    False,
+                    f"Disk usage critical: {pct_used:.1f}% ({free_gb:.1f}GB free of {total_gb:.1f}GB)",
+                )
             elif pct_used > 80:
                 return True, f"Disk usage warning: {pct_used:.1f}% ({free_gb:.1f}GB free)"
             return True, f"Disk OK: {pct_used:.1f}% used ({free_gb:.1f}GB free)"
@@ -189,9 +194,13 @@ class HealthMonitor:
         try:
             with get_session() as session:
                 cutoff = datetime.utcnow() - timedelta(minutes=10)
-                recent = session.query(SystemMetrics).filter(
-                    SystemMetrics.timestamp >= cutoff
-                ).order_by(SystemMetrics.timestamp.desc()).limit(10).all()
+                recent = (
+                    session.query(SystemMetrics)
+                    .filter(SystemMetrics.timestamp >= cutoff)
+                    .order_by(SystemMetrics.timestamp.desc())
+                    .limit(10)
+                    .all()
+                )
 
                 if not recent:
                     return True, "No recent metrics"
@@ -205,7 +214,10 @@ class HealthMonitor:
                 error_rate = (total_errors / total_scans) * 100 if total_scans > 0 else 0
 
                 if error_rate > 50:
-                    return False, f"Error rate critical: {error_rate:.1f}% ({total_errors}/{total_scans})"
+                    return (
+                        False,
+                        f"Error rate critical: {error_rate:.1f}% ({total_errors}/{total_scans})",
+                    )
                 elif error_rate > 20:
                     return True, f"Error rate warning: {error_rate:.1f}%"
                 return True, f"Error rate OK: {error_rate:.1f}%"
@@ -216,12 +228,13 @@ class HealthMonitor:
 
     def register_api_check(self, name: str, client_getter: Callable[[], Any]):
         """API sağlık kontrolü kaydet (OKX vb.)"""
+
         async def check():
             try:
                 client = client_getter()
                 if client is None:
                     return True, f"{name} client not initialized yet (skipping)"
-                if hasattr(client, 'health_check'):
+                if hasattr(client, "health_check"):
                     healthy = await client.health_check()
                     return healthy, f"{name} API {'OK' if healthy else 'FAILED'}"
                 return True, f"{name} API check not implemented"
@@ -232,6 +245,7 @@ class HealthMonitor:
 
     def register_position_risk_check(self, portfolio_getter: Callable[[], Awaitable[Any]]):
         """Portföy risk kontrolü"""
+
         async def check():
             try:
                 portfolio = await portfolio_getter()

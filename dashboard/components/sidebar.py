@@ -37,18 +37,26 @@ def render_sidebar():
         st.markdown("### 🔍 Tarama Ayarları")
         st.session_state.scan_interval = st.slider(
             "Tarama Aralığı (saniye)",
-            min_value=10, max_value=300, value=settings.scan_interval_seconds, step=10,
-            help="Yeni token tarama sıklığı"
+            min_value=10,
+            max_value=300,
+            value=settings.scan_interval_seconds,
+            step=10,
+            help="Yeni token tarama sıklığı",
         )
 
         st.session_state.min_liquidity = st.number_input(
             "Min Likidite ($)",
-            min_value=100, max_value=100000, value=int(settings.min_liquidity_usd), step=500,
+            min_value=100,
+            max_value=100000,
+            value=int(settings.min_liquidity_usd),
+            step=500,
         )
 
         st.session_state.max_age = st.slider(
             "Max Token Yaşı (saat)",
-            min_value=1, max_value=24, value=settings.max_token_age_hours,
+            min_value=1,
+            max_value=24,
+            value=settings.max_token_age_hours,
         )
 
         st.divider()
@@ -57,27 +65,37 @@ def render_sidebar():
         st.markdown("### ⚠️ Risk Yönetimi")
         st.session_state.max_positions = st.slider(
             "Max Açık Pozisyon",
-            min_value=1, max_value=20, value=settings.max_open_positions,
+            min_value=1,
+            max_value=20,
+            value=settings.max_open_positions,
         )
 
         st.session_state.max_risk = st.slider(
             "Max Portföy Riski (%)",
-            min_value=5, max_value=100, value=int(settings.max_portfolio_risk_pct),
+            min_value=5,
+            max_value=100,
+            value=int(settings.max_portfolio_risk_pct),
         )
 
         st.session_state.position_size = st.slider(
             "Pozisyon Büyüklüğü (%)",
-            min_value=1, max_value=50, value=int(settings.position_size_pct),
+            min_value=1,
+            max_value=50,
+            value=int(settings.position_size_pct),
         )
 
         st.session_state.stop_loss = st.slider(
             "Stop-Loss (%)",
-            min_value=5, max_value=50, value=int(settings.stop_loss_pct),
+            min_value=5,
+            max_value=50,
+            value=int(settings.stop_loss_pct),
         )
 
         st.session_state.trailing_stop = st.slider(
             "Trailing Stop (%)",
-            min_value=1, max_value=30, value=int(settings.trailing_stop_pct),
+            min_value=1,
+            max_value=30,
+            value=int(settings.trailing_stop_pct),
         )
 
         st.divider()
@@ -90,7 +108,9 @@ def render_sidebar():
 
         st.session_state.refresh_interval = st.slider(
             "Yenileme Aralığı (sn)",
-            min_value=5, max_value=60, value=st.session_state.get("refresh_interval", 10),
+            min_value=5,
+            max_value=60,
+            value=st.session_state.get("refresh_interval", 10),
         )
 
         st.divider()
@@ -106,9 +126,9 @@ def render_sidebar():
 
         # Pozisyon özeti
         with get_session() as session:
-            open_count = session.query(DBPosition).filter(
-                DBPosition.status == PositionStatus.OPEN
-            ).count()
+            open_count = (
+                session.query(DBPosition).filter(DBPosition.status == PositionStatus.OPEN).count()
+            )
             st.metric("Açık Pozisyon", f"{open_count}/{settings.max_open_positions}")
 
         st.divider()

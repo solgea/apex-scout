@@ -59,6 +59,7 @@ async def run_bot():
     async def get_recovery_state():
         """Orchestrator durumundan RecoveryState üret"""
         from orchestrator.recovery import RecoveryState
+
         status = orchestrator.get_status()
         return RecoveryState(
             orchestrator_stats=status.get("stats", {}),
@@ -113,18 +114,30 @@ def run_dashboard_mode():
 
     # Streamlit'i subprocess olarak çalıştır
     import subprocess
+
     dashboard_path = Path(__file__).parent / "dashboard" / "app.py"
 
     env = os.environ.copy()
     env["PYTHONPATH"] = str(Path(__file__).parent)
 
     try:
-        subprocess.run([
-            sys.executable, "-m", "streamlit", "run", str(dashboard_path),
-            "--server.port", str(settings.dashboard_port),
-            "--server.address", settings.dashboard_host,
-            "--server.headless", "true",
-        ], env=env, check=True)
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "streamlit",
+                "run",
+                str(dashboard_path),
+                "--server.port",
+                str(settings.dashboard_port),
+                "--server.address",
+                settings.dashboard_host,
+                "--server.headless",
+                "true",
+            ],
+            env=env,
+            check=True,
+        )
     except subprocess.CalledProcessError as e:
         log.error(f"Dashboard failed: {e}")
         sys.exit(1)
@@ -143,29 +156,19 @@ Examples:
   python main.py --dashboard        # Run dashboard only
   python main.py --init-db          # Initialize database only
   python main.py --test-config      # Test configuration
-        """
+        """,
     )
 
     parser.add_argument(
-        "--dashboard", "-d",
-        action="store_true",
-        help="Run Streamlit dashboard only"
+        "--dashboard", "-d", action="store_true", help="Run Streamlit dashboard only"
     )
     parser.add_argument(
-        "--init-db",
-        action="store_true",
-        help="Initialize database tables and exit"
+        "--init-db", action="store_true", help="Initialize database tables and exit"
     )
     parser.add_argument(
-        "--test-config",
-        action="store_true",
-        help="Validate configuration and exit"
+        "--test-config", action="store_true", help="Validate configuration and exit"
     )
-    parser.add_argument(
-        "--version", "-v",
-        action="version",
-        version="Apex Scout 1.0.0"
-    )
+    parser.add_argument("--version", "-v", action="version", version="Apex Scout 1.0.0")
 
     args = parser.parse_args()
 
@@ -190,6 +193,7 @@ Examples:
     if args.init_db:
         log.info("Initializing database...")
         from shared.database import init_db
+
         init_db()
         log.info("✅ Database initialized!")
         sys.exit(0)

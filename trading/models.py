@@ -29,6 +29,7 @@ class OrderStatus(str, Enum):
 
 class Order(BaseModel):
     """Emir modeli"""
+
     id: Optional[str] = None  # Local ID
     okx_order_id: Optional[str] = None  # OKX order ID
     okx_cl_ord_id: Optional[str] = None  # Client order ID
@@ -59,6 +60,7 @@ class Order(BaseModel):
 
 class Trade(BaseModel):
     """Gerçekleşen trade (fill)"""
+
     id: Optional[str] = None
     position_id: Optional[int] = None
     order_id: Optional[str] = None
@@ -83,6 +85,7 @@ class Trade(BaseModel):
 
 class Position(BaseModel):
     """Pozisyon modeli"""
+
     id: Optional[int] = None  # DB ID
     token_id: Optional[int] = None
 
@@ -102,7 +105,9 @@ class Position(BaseModel):
 
     # Risk yönetimi
     stop_loss_price: float
-    take_profit_tiers: List[Dict[str, Any]] = Field(default_factory=list)  # [{"profit_pct": 25, "sell_pct": 40, "triggered": false}]
+    take_profit_tiers: List[Dict[str, Any]] = Field(
+        default_factory=list
+    )  # [{"profit_pct": 25, "sell_pct": 40, "triggered": false}]
     current_tp_tier: int = 0
     trailing_stop_price: Optional[float] = None
     trailing_activated: bool = False
@@ -133,6 +138,7 @@ class Position(BaseModel):
 
 class PortfolioSnapshot(BaseModel):
     """Portföy anlık görüntüsü"""
+
     total_value_usd: float
     available_balance: float
     locked_balance: float

@@ -92,28 +92,83 @@ def render_metrics_charts(metrics: list):
 
     # 1. Tarama ve karar grafiği
     fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=timestamps, y=[m["tokens_found"] for m in sorted_metrics], name="Bulunan", mode='lines'))
-    fig1.add_trace(go.Scatter(x=timestamps, y=[m["decisions_pass"] for m in sorted_metrics], name="PASS", mode='lines'))
-    fig1.add_trace(go.Scatter(x=timestamps, y=[m["decisions_watch"] for m in sorted_metrics], name="WATCH", mode='lines'))
-    fig1.add_trace(go.Scatter(x=timestamps, y=[m["decisions_skip"] for m in sorted_metrics], name="SKIP", mode='lines'))
-    fig1.update_layout(title="Tarama ve Kararlar", height=300, template='plotly_white')
+    fig1.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=[m["tokens_found"] for m in sorted_metrics],
+            name="Bulunan",
+            mode="lines",
+        )
+    )
+    fig1.add_trace(
+        go.Scatter(
+            x=timestamps, y=[m["decisions_pass"] for m in sorted_metrics], name="PASS", mode="lines"
+        )
+    )
+    fig1.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=[m["decisions_watch"] for m in sorted_metrics],
+            name="WATCH",
+            mode="lines",
+        )
+    )
+    fig1.add_trace(
+        go.Scatter(
+            x=timestamps, y=[m["decisions_skip"] for m in sorted_metrics], name="SKIP", mode="lines"
+        )
+    )
+    fig1.update_layout(title="Tarama ve Kararlar", height=300, template="plotly_white")
     st.plotly_chart(fig1, use_container_width=True)
 
     # 2. İşlem ve hata grafiği
     fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=timestamps, y=[m["trades_executed"] for m in sorted_metrics], name="İşlemler", mode='lines', line=dict(color='green')))
-    fig2.add_trace(go.Scatter(x=timestamps, y=[m["errors_count"] for m in sorted_metrics], name="Hatalar", mode='lines', line=dict(color='red')))
-    fig2.update_layout(title="İşlemler ve Hatalar", height=300, template='plotly_white')
+    fig2.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=[m["trades_executed"] for m in sorted_metrics],
+            name="İşlemler",
+            mode="lines",
+            line=dict(color="green"),
+        )
+    )
+    fig2.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=[m["errors_count"] for m in sorted_metrics],
+            name="Hatalar",
+            mode="lines",
+            line=dict(color="red"),
+        )
+    )
+    fig2.update_layout(title="İşlemler ve Hatalar", height=300, template="plotly_white")
     st.plotly_chart(fig2, use_container_width=True)
 
     # 3. Portföy ve risk
     fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=timestamps, y=[m["total_portfolio_value"] for m in sorted_metrics], name="Portföy ($)", mode='lines', yaxis='y'))
-    fig3.add_trace(go.Scatter(x=timestamps, y=[m["risk_exposure_pct"] for m in sorted_metrics], name="Risk (%)", mode='lines', yaxis='y2', line=dict(color='orange')))
+    fig3.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=[m["total_portfolio_value"] for m in sorted_metrics],
+            name="Portföy ($)",
+            mode="lines",
+            yaxis="y",
+        )
+    )
+    fig3.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=[m["risk_exposure_pct"] for m in sorted_metrics],
+            name="Risk (%)",
+            mode="lines",
+            yaxis="y2",
+            line=dict(color="orange"),
+        )
+    )
     fig3.update_layout(
         title="Portföy Değeri ve Risk",
         height=300,
-        template='plotly_white',
+        template="plotly_white",
         yaxis=dict(title="Değer (USDT)", side="left"),
         yaxis2=dict(title="Risk (%)", side="right", overlaying="y"),
     )
@@ -128,23 +183,29 @@ def render_recent_events(metrics: list):
     for m in metrics[:20]:  # Son 20
         ts = m["timestamp"]
         if m["scan_count"] > 0:
-            events.append({
-                "Zaman": ts.strftime("%H:%M:%S") if isinstance(ts, datetime) else str(ts)[:8],
-                "Tür": "Tarama",
-                "Detay": f"{m['tokens_found']} token, {m['decisions_pass']} PASS, {m['decisions_watch']} WATCH, {m['decisions_skip']} SKIP",
-            })
+            events.append(
+                {
+                    "Zaman": ts.strftime("%H:%M:%S") if isinstance(ts, datetime) else str(ts)[:8],
+                    "Tür": "Tarama",
+                    "Detay": f"{m['tokens_found']} token, {m['decisions_pass']} PASS, {m['decisions_watch']} WATCH, {m['decisions_skip']} SKIP",
+                }
+            )
         if m["trades_executed"] > 0:
-            events.append({
-                "Zaman": ts.strftime("%H:%M:%S") if isinstance(ts, datetime) else str(ts)[:8],
-                "Tür": "İşlem",
-                "Detay": f"{m['trades_executed']} işlem gerçekleşti",
-            })
+            events.append(
+                {
+                    "Zaman": ts.strftime("%H:%M:%S") if isinstance(ts, datetime) else str(ts)[:8],
+                    "Tür": "İşlem",
+                    "Detay": f"{m['trades_executed']} işlem gerçekleşti",
+                }
+            )
         if m["errors_count"] > 0:
-            events.append({
-                "Zaman": ts.strftime("%H:%M:%S") if isinstance(ts, datetime) else str(ts)[:8],
-                "Tür": "⚠️ Hata",
-                "Detay": f"{m['errors_count']} hata oluştu",
-            })
+            events.append(
+                {
+                    "Zaman": ts.strftime("%H:%M:%S") if isinstance(ts, datetime) else str(ts)[:8],
+                    "Tür": "⚠️ Hata",
+                    "Detay": f"{m['errors_count']} hata oluştu",
+                }
+            )
 
     if events:
         df = pd.DataFrame(events)

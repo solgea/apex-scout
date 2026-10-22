@@ -25,16 +25,24 @@ class BlacklistManager:
     def __init__(self, default_duration_hours: int = None):
         self.default_duration_hours = default_duration_hours or settings.blacklist_duration_hours
 
-    def add(self, token_address: str, token_symbol: str, reason: str = "STOP_LOSS_HIT", duration_hours: int = None) -> BlacklistEntry:
+    def add(
+        self,
+        token_address: str,
+        token_symbol: str,
+        reason: str = "STOP_LOSS_HIT",
+        duration_hours: int = None,
+    ) -> BlacklistEntry:
         """Token'ı blacklist'e ekle"""
         duration = duration_hours or self.default_duration_hours
         expires_at = datetime.utcnow() + timedelta(hours=duration)
 
         with get_session() as session:
             # Varsa güncelle
-            entry = session.query(BlacklistEntry).filter(
-                BlacklistEntry.token_address == token_address
-            ).first()
+            entry = (
+                session.query(BlacklistEntry)
+                .filter(BlacklistEntry.token_address == token_address)
+                .first()
+            )
 
             if entry:
                 entry.expires_at = expires_at
@@ -51,16 +59,20 @@ class BlacklistManager:
                 session.add(entry)
 
             session.commit()
-            log.info(f"[Blacklist] Added: {token_symbol} ({token_address[:8]}...) for {duration}h, reason: {reason}")
+            log.info(
+                f"[Blacklist] Added: {token_symbol} ({token_address[:8]}...) for {duration}h, reason: {reason}"
+            )
 
             return entry
 
     def remove(self, token_address: str) -> bool:
         """Token'ı blacklist'ten kaldır"""
         with get_session() as session:
-            entry = session.query(BlacklistEntry).filter(
-                BlacklistEntry.token_address == token_address
-            ).first()
+            entry = (
+                session.query(BlacklistEntry)
+                .filter(BlacklistEntry.token_address == token_address)
+                .first()
+            )
 
             if entry:
                 session.delete(entry)
@@ -72,18 +84,24 @@ class BlacklistManager:
     def is_blacklisted(self, token_address: str) -> bool:
         """Token blacklist'te mi?"""
         with get_session() as session:
-            entry = session.query(BlacklistEntry).filter(
-                BlacklistEntry.token_address == token_address,
-                BlacklistEntry.expires_at > datetime.utcnow()
-            ).first()
+            entry = (
+                session.query(BlacklistEntry)
+                .filter(
+                    BlacklistEntry.token_address == token_address,
+                    BlacklistEntry.expires_at > datetime.utcnow(),
+                )
+                .first()
+            )
             return entry is not None
 
     def get_remaining_time(self, token_address: str) -> Optional[timedelta]:
         """Kalan süreyi döndür"""
         with get_session() as session:
-            entry = session.query(BlacklistEntry).filter(
-                BlacklistEntry.token_address == token_address
-            ).first()
+            entry = (
+                session.query(BlacklistEntry)
+                .filter(BlacklistEntry.token_address == token_address)
+                .first()
+            )
 
             if entry and entry.expires_at > datetime.utcnow():
                 return entry.expires_at - datetime.utcnow()
@@ -93,9 +111,12 @@ class BlacklistManager:
         """Aktif blacklist entry'leri"""
         now = datetime.utcnow()
         with get_session() as session:
-            entries = session.query(BlacklistEntry).filter(
-                BlacklistEntry.expires_at > now
-            ).order_by(BlacklistEntry.created_at.desc()).all()
+            entries = (
+                session.query(BlacklistEntry)
+                .filter(BlacklistEntry.expires_at > now)
+                .order_by(BlacklistEntry.created_at.desc())
+                .all()
+            )
 
             return [
                 {
@@ -113,9 +134,9 @@ class BlacklistManager:
         """Süresi dolanları temizle"""
         with get_session() as session:
             now = datetime.utcnow()
-            deleted = session.query(BlacklistEntry).filter(
-                BlacklistEntry.expires_at <= now
-            ).delete()
+            deleted = (
+                session.query(BlacklistEntry).filter(BlacklistEntry.expires_at <= now).delete()
+            )
             session.commit()
 
             if deleted:

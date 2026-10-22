@@ -76,7 +76,9 @@ class DexScreenerScanner(BaseScanner):
 
         # Sadece Solana chain'lerini filtrele
         solana_profiles = [p for p in profiles if p.get("chainId") == "solana"]
-        log.debug(f"[DexScreener] {len(solana_profiles)} Solana profiles from {len(profiles)} total")
+        log.debug(
+            f"[DexScreener] {len(solana_profiles)} Solana profiles from {len(profiles)} total"
+        )
 
         # 2. Her token için detaylı veri çek (paralel)
         tokens = []
@@ -102,10 +104,7 @@ class DexScreenerScanner(BaseScanner):
         return tokens
 
     async def _fetch_token_detail(
-        self,
-        session: aiohttp.ClientSession,
-        address: str,
-        profile: dict
+        self, session: aiohttp.ClientSession, address: str, profile: dict
     ) -> Optional[TokenData]:
         """Token detayını çek ve TokenData'ya çevir"""
         url = f"{self.base_url}/tokens/v1/solana/{address}"

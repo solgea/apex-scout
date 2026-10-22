@@ -93,7 +93,9 @@ def calculate_quantity(entry_price: float, position_value_usd: float, decimals: 
     return round_down(position_value_usd / entry_price, decimals)
 
 
-def generate_signature(timestamp: str, method: str, request_path: str, body: str, secret: str) -> str:
+def generate_signature(
+    timestamp: str, method: str, request_path: str, body: str, secret: str
+) -> str:
     """
     OKX API imzası oluşturur (HMAC SHA256 + Base64)
     OKX dokümantasyonuna göre: timestamp + method + requestPath + body
@@ -129,7 +131,7 @@ def retry_with_backoff(
                 except exceptions as e:
                     last_exception = e
                     if attempt < max_retries:
-                        delay = min(base_delay * (2 ** attempt), max_delay)
+                        delay = min(base_delay * (2**attempt), max_delay)
                         if logger:
                             logger.warning(
                                 f"Retry {attempt + 1}/{max_retries} for {func.__name__} "
@@ -144,6 +146,7 @@ def retry_with_backoff(
         @wraps(func)
         async def async_wrapper(*args, **kwargs) -> T:
             import asyncio
+
             last_exception = None
             for attempt in range(max_retries + 1):
                 try:
@@ -151,7 +154,7 @@ def retry_with_backoff(
                 except exceptions as e:
                     last_exception = e
                     if attempt < max_retries:
-                        delay = min(base_delay * (2 ** attempt), max_delay)
+                        delay = min(base_delay * (2**attempt), max_delay)
                         if logger:
                             logger.warning(
                                 f"Retry {attempt + 1}/{max_retries} for {func.__name__} "
@@ -164,6 +167,7 @@ def retry_with_backoff(
             raise last_exception
 
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper
@@ -282,7 +286,7 @@ def safe_int(value: Any, default: int = 0) -> int:
 
 def chunks(lst: List[Any], n: int) -> List[List[Any]]:
     """Listeyi n'li parçalara böl"""
-    return [lst[i:i + n] for i in range(0, len(lst), n)]
+    return [lst[i : i + n] for i in range(0, len(lst), n)]
 
 
 def get_time_ago_str(seconds: int) -> str:

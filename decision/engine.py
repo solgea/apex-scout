@@ -64,7 +64,9 @@ class DecisionEngine:
 
             self.decision_count += 1
             elapsed_ms = (time.perf_counter() - start) * 1000
-            log.debug(f"[Decision] {token.symbol}: {action.value} ({total_score:.1f}) in {elapsed_ms:.1f}ms")
+            log.debug(
+                f"[Decision] {token.symbol}: {action.value} ({total_score:.1f}) in {elapsed_ms:.1f}ms"
+            )
 
             return result
 
@@ -85,12 +87,14 @@ class DecisionEngine:
                 results.append(result)
             except DecisionError:
                 # Hatalı token'ı atla, SKIP olarak ekle
-                results.append(DecisionResult(
-                    token=token,
-                    score=0.0,
-                    action=DecisionAction.SKIP,
-                    reasons=["Evaluation error"],
-                ))
+                results.append(
+                    DecisionResult(
+                        token=token,
+                        score=0.0,
+                        action=DecisionAction.SKIP,
+                        reasons=["Evaluation error"],
+                    )
+                )
 
         elapsed_ms = (time.perf_counter() - start) * 1000
 
@@ -109,10 +113,7 @@ class DecisionEngine:
         return batch
 
     def _determine_action(
-        self,
-        token: TokenData,
-        score: float,
-        breakdown: ScoreBreakdown
+        self, token: TokenData, score: float, breakdown: ScoreBreakdown
     ) -> tuple[DecisionAction, List[str]]:
         """
         Skora ve bileşenlere göre aksiyon belirle.
@@ -142,7 +143,9 @@ class DecisionEngine:
 
         return action, reasons
 
-    def _add_detailed_reasons(self, token: TokenData, breakdown: ScoreBreakdown, reasons: List[str]):
+    def _add_detailed_reasons(
+        self, token: TokenData, breakdown: ScoreBreakdown, reasons: List[str]
+    ):
         """Detaylı skor nedenlerini ekle"""
         # Güçlü yönler
         if breakdown.liquidity >= 70:

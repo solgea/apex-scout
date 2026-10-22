@@ -80,7 +80,9 @@ class TokenFilterCriteria(BaseModel):
         reasons = []
 
         if token.liquidity_usd < self.min_liquidity_usd:
-            reasons.append(f"Likidite çok düşük: ${token.liquidity_usd:,.0f} < ${self.min_liquidity_usd:,.0f}")
+            reasons.append(
+                f"Likidite çok düşük: ${token.liquidity_usd:,.0f} < ${self.min_liquidity_usd:,.0f}"
+            )
 
         age_hours = token.age_seconds / 3600
         if age_hours > self.max_age_hours:
@@ -89,10 +91,13 @@ class TokenFilterCriteria(BaseModel):
         if token.volume_24h < self.min_volume_24h:
             # Pump.fun 24h hacim vermez (0 = bilgi yok) -> filtreleme
             from config.constants import TokenSource
+
             if token.source == TokenSource.PUMPFUN and token.volume_24h == 0:
                 pass  # Bilgi yok, atlanır
             else:
-                reasons.append(f"Hacim çok düşük: ${token.volume_24h:,.0f} < ${self.min_volume_24h:,.0f}")
+                reasons.append(
+                    f"Hacim çok düşük: ${token.volume_24h:,.0f} < ${self.min_volume_24h:,.0f}"
+                )
 
         # Holder sayısı kontrolü
         # NOT: holder_count == 0 => "bilgi yok" (DexScreener holder vermez)
@@ -102,7 +107,9 @@ class TokenFilterCriteria(BaseModel):
 
         # Top 10 holder dağılımı - 0 => bilgi yok, kontrol edilmez
         if token.top_10_holder_pct > 0 and token.top_10_holder_pct > self.max_top_10_holder_pct:
-            reasons.append(f"Top 10 holder çok yoğun: %{token.top_10_holder_pct:.1f} > %{self.max_top_10_holder_pct:.1f}")
+            reasons.append(
+                f"Top 10 holder çok yoğun: %{token.top_10_holder_pct:.1f} > %{self.max_top_10_holder_pct:.1f}"
+            )
 
         if self.require_mint_renounced and not token.mint_renounced:
             reasons.append("Mint yetkisi terk edilmemiş")
@@ -122,6 +129,7 @@ class TokenFilterCriteria(BaseModel):
 # DexScreener özel response modelleri
 class DexScreenerPair(BaseModel):
     """DexScreener pair response"""
+
     chain_id: str
     dex_id: str
     url: str
@@ -140,6 +148,7 @@ class DexScreenerPair(BaseModel):
 
 class DexScreenerResponse(BaseModel):
     """DexScreener API response"""
+
     schema_version: str
     pairs: List[DexScreenerPair] = []
 
@@ -147,6 +156,7 @@ class DexScreenerResponse(BaseModel):
 # Pump.fun özel response modelleri
 class PumpFunToken(BaseModel):
     """Pump.fun token response"""
+
     mint: str
     name: str
     symbol: str
@@ -172,4 +182,5 @@ class PumpFunToken(BaseModel):
 
 class PumpFunResponse(BaseModel):
     """Pump.fun API response"""
+
     tokens: List[PumpFunToken] = []

@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class TakeProfitTierModel(BaseSettings):
     """Kademeli Take-Profit katmanı modeli"""
+
     profit_pct: float = Field(..., description="Kâr hedefi yüzdesi (örn: 25 = %25)")
     sell_pct: float = Field(..., description="Bu kademe satılacak pozisyon yüzdesi (örn: 40 = %40)")
 
@@ -42,11 +43,19 @@ class Settings(BaseSettings):
     okx_base_url: str = Field(default="https://www.okx.com", description="OKX API base URL")
 
     # ============ SCANNER ============
-    scan_interval_seconds: int = Field(default=60, ge=10, le=3600, description="Tarama aralığı (saniye)")
-    dexscreener_base_url: str = Field(default="https://api.dexscreener.com", description="DexScreener API URL")
-    pumpfun_base_url: str = Field(default="https://frontend-api-v3.pump.fun", description="Pump.fun API URL (v3)")
+    scan_interval_seconds: int = Field(
+        default=60, ge=10, le=3600, description="Tarama aralığı (saniye)"
+    )
+    dexscreener_base_url: str = Field(
+        default="https://api.dexscreener.com", description="DexScreener API URL"
+    )
+    pumpfun_base_url: str = Field(
+        default="https://frontend-api-v3.pump.fun", description="Pump.fun API URL (v3)"
+    )
     min_liquidity_usd: float = Field(default=5000, ge=0, description="Minimum likidite (USD)")
-    max_token_age_hours: int = Field(default=2, ge=1, le=168, description="Maksimum token yaşı (saat)")
+    max_token_age_hours: int = Field(
+        default=2, ge=1, le=168, description="Maksimum token yaşı (saat)"
+    )
     min_volume_24h: float = Field(default=1000, ge=0, description="Minimum 24h hacim (USD)")
 
     # ============ DECISION / SCORING ============
@@ -54,17 +63,27 @@ class Settings(BaseSettings):
     watch_threshold: int = Field(default=50, ge=0, le=100, description="İzleme eşiği")
 
     # Skor ağırlıkları (toplam 1.0 olmalı)
-    scoring_weights_liquidity: float = Field(default=0.25, ge=0, le=1, description="Likidite ağırlığı")
+    scoring_weights_liquidity: float = Field(
+        default=0.25, ge=0, le=1, description="Likidite ağırlığı"
+    )
     scoring_weights_volume: float = Field(default=0.20, ge=0, le=1, description="Hacim ağırlığı")
     scoring_weights_age: float = Field(default=0.15, ge=0, le=1, description="Yaş ağırlığı")
     scoring_weights_mcap: float = Field(default=0.15, ge=0, le=1, description="Market cap ağırlığı")
-    scoring_weights_mint_freeze: float = Field(default=0.10, ge=0, le=1, description="Mint/Freeze ağırlığı")
-    scoring_weights_holder_dist: float = Field(default=0.15, ge=0, le=1, description="Holder dağılımı ağırlığı")
+    scoring_weights_mint_freeze: float = Field(
+        default=0.10, ge=0, le=1, description="Mint/Freeze ağırlığı"
+    )
+    scoring_weights_holder_dist: float = Field(
+        default=0.15, ge=0, le=1, description="Holder dağılımı ağırlığı"
+    )
 
     # ============ RISK MANAGEMENT ============
     max_open_positions: int = Field(default=4, ge=1, le=20, description="Max açık pozisyon sayısı")
-    max_portfolio_risk_pct: float = Field(default=35.0, ge=1, le=100, description="Max portföy riski (%)")
-    position_size_pct: float = Field(default=10.0, ge=1, le=50, description="İşlem başı pozisyon büyüklüğü (%)")
+    max_portfolio_risk_pct: float = Field(
+        default=35.0, ge=1, le=100, description="Max portföy riski (%)"
+    )
+    position_size_pct: float = Field(
+        default=10.0, ge=1, le=50, description="İşlem başı pozisyon büyüklüğü (%)"
+    )
     stop_loss_pct: float = Field(default=15.0, ge=1, le=90, description="Stop-Loss (%)")
     trailing_stop_pct: float = Field(default=10.0, ge=1, le=50, description="Trailing Stop (%)")
     take_profit_tiers: List[TakeProfitTierModel] = Field(
@@ -73,22 +92,30 @@ class Settings(BaseSettings):
             {"profit_pct": 45.0, "sell_pct": 40.0},
             {"profit_pct": 70.0, "sell_pct": 100.0},
         ],
-        description="Kademeli TP katmanları"
+        description="Kademeli TP katmanları",
     )
-    blacklist_duration_hours: int = Field(default=3, ge=1, le=168, description="Blacklist süresi (saat)")
-    trade_cooldown_seconds: int = Field(default=30, ge=0, le=3600, description="İşlem cooldown (saniye)")
+    blacklist_duration_hours: int = Field(
+        default=3, ge=1, le=168, description="Blacklist süresi (saat)"
+    )
+    trade_cooldown_seconds: int = Field(
+        default=30, ge=0, le=3600, description="İşlem cooldown (saniye)"
+    )
 
     # ============ DASHBOARD ============
     dashboard_host: str = Field(default="0.0.0.0", description="Dashboard host")
     dashboard_port: int = Field(default=8501, ge=1000, le=65535, description="Dashboard port")
-    dashboard_refresh_seconds: int = Field(default=10, ge=5, le=300, description="Dashboard yenileme (saniye)")
+    dashboard_refresh_seconds: int = Field(
+        default=10, ge=5, le=300, description="Dashboard yenileme (saniye)"
+    )
 
     # ============ SYSTEM ============
     log_level: str = Field(default="INFO", description="Log seviyesi")
     log_rotation: str = Field(default="10 MB", description="Log rotasyon boyutu")
     log_retention: str = Field(default="7 days", description="Log saklama süresi")
     db_url: str = Field(default="sqlite:///data/apex_scout.db", description="Veritabanı URL")
-    heartbeat_interval: int = Field(default=30, ge=5, le=300, description="Heartbeat aralığı (saniye)")
+    heartbeat_interval: int = Field(
+        default=30, ge=5, le=300, description="Heartbeat aralığı (saniye)"
+    )
     max_retries: int = Field(default=3, ge=0, le=10, description="Max retry sayısı")
     retry_backoff_base: float = Field(default=2.0, ge=1.0, le=10.0, description="Backoff tabanı")
 
@@ -179,7 +206,9 @@ class Settings(BaseSettings):
 
     def get_take_profit_tiers(self) -> List[dict]:
         """TP katmanlarını dict listesi olarak döner"""
-        return [{"profit_pct": t.profit_pct, "sell_pct": t.sell_pct} for t in self.take_profit_tiers]
+        return [
+            {"profit_pct": t.profit_pct, "sell_pct": t.sell_pct} for t in self.take_profit_tiers
+        ]
 
 
 # Global settings instance

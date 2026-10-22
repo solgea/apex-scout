@@ -214,7 +214,9 @@ class PumpFunScanner(BaseScanner):
 
     # ============ WEBSOCKET ============
 
-    async def start_websocket(self, callback: Optional[Callable[[TokenData], Awaitable[None]]] = None):
+    async def start_websocket(
+        self, callback: Optional[Callable[[TokenData], Awaitable[None]]] = None
+    ):
         """WebSocket bağlantısını başlat ve yeni token'ları dinle"""
         self._new_token_callback = callback
         self._ws_task = asyncio.create_task(self._ws_loop())

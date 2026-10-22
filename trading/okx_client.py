@@ -18,8 +18,11 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 from shared.logger import get_logger
 from shared.exceptions import (
-    OKXAPIError, OKXAuthError, OKXRateLimitError,
-    OrderExecutionError, InsufficientBalanceError
+    OKXAPIError,
+    OKXAuthError,
+    OKXRateLimitError,
+    OrderExecutionError,
+    InsufficientBalanceError,
 )
 from shared.utils import generate_signature, utc_now_iso
 from config.settings import settings
@@ -81,7 +84,9 @@ class OKXDemoClient:
         """OKX sunucu zamanıyla lokal zaman farkını kontrol et"""
         try:
             session = await self._get_session()
-            async with session.get(f"{self.base_url}/api/v5/public/time", timeout=aiohttp.ClientTimeout(total=10)) as resp:
+            async with session.get(
+                f"{self.base_url}/api/v5/public/time", timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     if data.get("code") == "0" and data.get("data"):
@@ -122,18 +127,11 @@ class OKXDemoClient:
             return endpoint
 
         # Sıralı query string (deterministik imza için)
-        query = "&".join(
-            f"{k}={v}" for k, v in sorted(params.items()) if v is not None
-        )
+        query = "&".join(f"{k}={v}" for k, v in sorted(params.items()) if v is not None)
         return f"{endpoint}?{query}" if query else endpoint
 
     async def _request(
-        self,
-        method: str,
-        endpoint: str,
-        params: Dict = None,
-        data: Dict = None,
-        auth: bool = True
+        self, method: str, endpoint: str, params: Dict = None, data: Dict = None, auth: bool = True
     ) -> Dict:
         """HTTP isteği gönder - Her retry'de fresh timestamp + query string imzası ile"""
         session = await self._get_session()
@@ -150,15 +148,20 @@ class OKXDemoClient:
             # Her denemede FRESH timestamp ve signature üret
             headers = (
                 self._get_headers(method, signed_path, body)
-                if auth else {"Content-Type": "application/json"}
+                if auth
+                else {"Content-Type": "application/json"}
             )
 
             try:
-                async with session.request(method, url, params=params, data=body, headers=headers) as resp:
+                async with session.request(
+                    method, url, params=params, data=body, headers=headers
+                ) as resp:
                     response_text = await resp.text()
 
                     # Rate limit header'larını kontrol et
-                    self._rate_limit_remaining = int(resp.headers.get("x-ratelimit-remaining", "100"))
+                    self._rate_limit_remaining = int(
+                        resp.headers.get("x-ratelimit-remaining", "100")
+                    )
                     self._rate_limit_reset = int(resp.headers.get("x-ratelimit-reset", "0"))
 
                     if resp.status == 429:
@@ -176,9 +179,11 @@ class OKXDemoClient:
 
                         # Timestamp hataları - retry için özel durum
                         if error_code in ("50112", "50113"):
-                            log.warning(f"Timestamp error [{error_code}]: {error_msg}, retrying with fresh timestamp... (attempt {attempt + 1}/{max_retries + 1})")
+                            log.warning(
+                                f"Timestamp error [{error_code}]: {error_msg}, retrying with fresh timestamp... (attempt {attempt + 1}/{max_retries + 1})"
+                            )
                             if attempt < max_retries:
-                                delay = min(base_delay * (2 ** attempt), 60.0)
+                                delay = min(base_delay * (2**attempt), 60.0)
                                 await asyncio.sleep(delay)
                                 continue
                             raise OKXRateLimitError(f"Timestamp error after retries: {error_msg}")
@@ -196,11 +201,15 @@ class OKXDemoClient:
                 raise
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 if attempt < max_retries:
-                    delay = min(base_delay * (2 ** attempt), 60.0)
-                    log.warning(f"Request error (attempt {attempt + 1}/{max_retries + 1}): {e}, retrying in {delay:.1f}s...")
+                    delay = min(base_delay * (2**attempt), 60.0)
+                    log.warning(
+                        f"Request error (attempt {attempt + 1}/{max_retries + 1}): {e}, retrying in {delay:.1f}s..."
+                    )
                     await asyncio.sleep(delay)
                     continue
-                log.error(f"OKX request failed after {max_retries + 1} attempts: {method} {endpoint} - {e}")
+                log.error(
+                    f"OKX request failed after {max_retries + 1} attempts: {method} {endpoint} - {e}"
+                )
                 raise OKXAPIError(f"Request failed after retries: {e}") from e
             except Exception as e:
                 log.error(f"OKX request failed: {method} {endpoint} - {e}")
@@ -250,7 +259,9 @@ class OKXDemoClient:
                 i.get("instId") for i in instruments if i.get("state") == "live"
             }
             self._instrument_cache_time = time.time()
-            log.info(f"[OKX] Instrument cache updated: {len(self._instrument_cache)} live {inst_type} pairs")
+            log.info(
+                f"[OKX] Instrument cache updated: {len(self._instrument_cache)} live {inst_type} pairs"
+            )
             return len(self._instrument_cache)
         except Exception as e:
             log.error(f"[OKX] Instrument cache refresh failed: {e}")
@@ -298,11 +309,15 @@ class OKXDemoClient:
 
     async def get_candles(self, inst_id: str, bar: str = "1m", limit: int = 100) -> List[List]:
         """Mum verileri (OHLCV)"""
-        result = await self._request("GET", "/api/v5/market/candles", params={
-            "instId": inst_id,
-            "bar": bar,
-            "limit": str(limit),
-        })
+        result = await self._request(
+            "GET",
+            "/api/v5/market/candles",
+            params={
+                "instId": inst_id,
+                "bar": bar,
+                "limit": str(limit),
+            },
+        )
         return result["data"]  # [ts, o, h, l, c, vol, ...]
 
     # ============ TRADING ============
@@ -401,7 +416,9 @@ class OKXDemoClient:
         }
         return mapping.get(state, OrderStatus.PENDING)
 
-    async def get_fills(self, inst_id: str = None, ord_id: str = None, after: str = None) -> List[Trade]:
+    async def get_fills(
+        self, inst_id: str = None, ord_id: str = None, after: str = None
+    ) -> List[Trade]:
         """Trade geçmişi (fills)"""
         params = {}
         if inst_id:
@@ -415,24 +432,32 @@ class OKXDemoClient:
 
         trades = []
         for d in result["data"]:
-            trades.append(Trade(
-                inst_id=d.get("instId", ""),
-                side=OrderSide(d.get("side", "buy")),
-                price=float(d.get("fillPx", "0")),
-                size=float(d.get("fillSz", "0")),
-                fee=float(d.get("fee", "0")),
-                fee_ccy=d.get("feeCcy", "USDT"),
-                okx_trade_id=d.get("tradeId"),
-                okx_order_id=d.get("ordId"),
-                timestamp=datetime.fromtimestamp(int(d.get("ts", "0")) / 1000) if d.get("ts") else datetime.utcnow(),
-            ))
+            trades.append(
+                Trade(
+                    inst_id=d.get("instId", ""),
+                    side=OrderSide(d.get("side", "buy")),
+                    price=float(d.get("fillPx", "0")),
+                    size=float(d.get("fillSz", "0")),
+                    fee=float(d.get("fee", "0")),
+                    fee_ccy=d.get("feeCcy", "USDT"),
+                    okx_trade_id=d.get("tradeId"),
+                    okx_order_id=d.get("ordId"),
+                    timestamp=(
+                        datetime.fromtimestamp(int(d.get("ts", "0")) / 1000)
+                        if d.get("ts")
+                        else datetime.utcnow()
+                    ),
+                )
+            )
         return trades
 
     # ============ POSITIONS (Spot için position yok, balance kullan) ============
 
     async def get_positions(self, inst_type: str = "SPOT") -> List[Dict]:
         """Pozisyonlar (Spot için boş döner, futures için çalışır)"""
-        result = await self._request("GET", "/api/v5/account/positions", params={"instType": inst_type})
+        result = await self._request(
+            "GET", "/api/v5/account/positions", params={"instType": inst_type}
+        )
         return result["data"]
 
     # ============ INSTRUMENTS ============

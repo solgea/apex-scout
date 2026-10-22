@@ -101,7 +101,9 @@ class OrderExecutor:
         async with self._order_semaphore:
             # Client order ID oluştur
             if not cl_ord_id:
-                cl_ord_id = f"apex_{inst_id}_{side.value}_{int(datetime.utcnow().timestamp() * 1000)}"
+                cl_ord_id = (
+                    f"apex_{inst_id}_{side.value}_{int(datetime.utcnow().timestamp() * 1000)}"
+                )
 
             # Emir oluştur
             order = Order(
@@ -150,12 +152,15 @@ class OrderExecutor:
             except Exception as e:
                 order.status = OrderStatus.FAILED
                 trade_log.error(f"ORDER FAILED | {cl_ord_id} | {e}")
-                raise OrderExecutionError(f"Order execution failed: {e}", {
-                    "inst_id": inst_id,
-                    "side": side.value,
-                    "size": size,
-                    "cl_ord_id": cl_ord_id,
-                }) from e
+                raise OrderExecutionError(
+                    f"Order execution failed: {e}",
+                    {
+                        "inst_id": inst_id,
+                        "side": side.value,
+                        "size": size,
+                        "cl_ord_id": cl_ord_id,
+                    },
+                ) from e
 
     async def _wait_for_fill(self, cl_ord_id: str, inst_id: str, timeout: float = 30.0) -> Order:
         """Emir fill olana kadar bekle (market emirler için)"""
@@ -190,13 +195,20 @@ class OrderExecutor:
                     )
                     return order
 
-                elif updated_order.status in (OrderStatus.CANCELLED, OrderStatus.REJECTED, OrderStatus.FAILED):
+                elif updated_order.status in (
+                    OrderStatus.CANCELLED,
+                    OrderStatus.REJECTED,
+                    OrderStatus.FAILED,
+                ):
                     order.status = updated_order.status
                     self._pending_orders.pop(cl_ord_id, None)
-                    raise OrderExecutionError(f"Order {updated_order.status.value}", {
-                        "cl_ord_id": cl_ord_id,
-                        "inst_id": inst_id,
-                    })
+                    raise OrderExecutionError(
+                        f"Order {updated_order.status.value}",
+                        {
+                            "cl_ord_id": cl_ord_id,
+                            "inst_id": inst_id,
+                        },
+                    )
 
                 await asyncio.sleep(check_interval)
 
@@ -209,24 +221,33 @@ class OrderExecutor:
         # Timeout
         order.status = OrderStatus.FAILED
         self._pending_orders.pop(cl_ord_id, None)
-        raise OrderExecutionError(f"Order fill timeout after {timeout}s", {
-            "cl_ord_id": cl_ord_id,
-            "inst_id": inst_id,
-        })
+        raise OrderExecutionError(
+            f"Order fill timeout after {timeout}s",
+            {
+                "cl_ord_id": cl_ord_id,
+                "inst_id": inst_id,
+            },
+        )
 
     async def cancel_order(self, inst_id: str, cl_ord_id: str = None, ord_id: str = None) -> bool:
         """Emir iptal et"""
         try:
-            result = await self.okx.cancel_order(inst_id=inst_id, ord_id=ord_id, cl_ord_id=cl_ord_id)
+            result = await self.okx.cancel_order(
+                inst_id=inst_id, ord_id=ord_id, cl_ord_id=cl_ord_id
+            )
             if cl_ord_id:
                 self._pending_orders.pop(cl_ord_id, None)
-            trade_log.info(f"CANCEL | {inst_id} | CID: {cl_ord_id} | OID: {ord_id} | Result: {result}")
+            trade_log.info(
+                f"CANCEL | {inst_id} | CID: {cl_ord_id} | OID: {ord_id} | Result: {result}"
+            )
             return result
         except Exception as e:
             log.error(f"[OrderExecutor] Cancel failed: {e}")
             return False
 
-    async def get_order_status(self, inst_id: str, cl_ord_id: str = None, ord_id: str = None) -> Order:
+    async def get_order_status(
+        self, inst_id: str, cl_ord_id: str = None, ord_id: str = None
+    ) -> Order:
         """Emir durumu sorgula"""
         return await self.okx.get_order(inst_id=inst_id, ord_id=ord_id, cl_ord_id=cl_ord_id)
 
@@ -241,7 +262,12 @@ class OrderExecutor:
                 order.avg_fill_price = updated.avg_fill_price
                 order.fee = updated.fee
 
-                if updated.status in (OrderStatus.FILLED, OrderStatus.CANCELLED, OrderStatus.REJECTED, OrderStatus.FAILED):
+                if updated.status in (
+                    OrderStatus.FILLED,
+                    OrderStatus.CANCELLED,
+                    OrderStatus.REJECTED,
+                    OrderStatus.FAILED,
+                ):
                     to_remove.append(cl_ord_id)
 
             except Exception as e:

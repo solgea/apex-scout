@@ -22,6 +22,7 @@ log = get_logger(__name__)
 @dataclass
 class PerformanceMetrics:
     """Performans metrikleri"""
+
     total_pnl: float = 0.0
     total_pnl_pct: float = 0.0
     realized_pnl: float = 0.0
@@ -104,9 +105,7 @@ class PortfolioManager:
         """Son 24 saatteki realized PnL"""
         cutoff = datetime.utcnow() - timedelta(hours=24)
         with get_session() as session:
-            trades = session.query(DBTrade).filter(
-                DBTrade.timestamp >= cutoff
-            ).all()
+            trades = session.query(DBTrade).filter(DBTrade.timestamp >= cutoff).all()
 
             pnl = 0.0
             for trade in trades:
@@ -155,7 +154,9 @@ class PortfolioManager:
 
             total_pnl = sum(trade_pnls)
             realized_pnl = sum(p.realized_pnl for p in positions)
-            unrealized_pnl = sum(p.unrealized_pnl for p in positions if p.status == PositionStatus.OPEN)
+            unrealized_pnl = sum(
+                p.unrealized_pnl for p in positions if p.status == PositionStatus.OPEN
+            )
 
             best_trade = max(trade_pnls) if trade_pnls else 0
             worst_trade = min(trade_pnls) if trade_pnls else 0
@@ -164,7 +165,7 @@ class PortfolioManager:
 
             gross_profit = sum(winning)
             gross_loss = abs(sum(losing))
-            profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+            profit_factor = gross_profit / gross_loss if gross_loss > 0 else float("inf")
 
             # Max drawdown
             equity_curve = []
@@ -184,7 +185,9 @@ class PortfolioManager:
 
             return PerformanceMetrics(
                 total_pnl=total_pnl,
-                total_pnl_pct=(total_pnl / self._initial_balance * 100) if self._initial_balance else 0,
+                total_pnl_pct=(
+                    (total_pnl / self._initial_balance * 100) if self._initial_balance else 0
+                ),
                 realized_pnl=realized_pnl,
                 unrealized_pnl=unrealized_pnl,
                 win_rate=win_rate,
@@ -195,7 +198,7 @@ class PortfolioManager:
                 worst_trade=worst_trade,
                 avg_win=avg_win,
                 avg_loss=avg_loss,
-                profit_factor=profit_factor if profit_factor != float('inf') else 0,
+                profit_factor=profit_factor if profit_factor != float("inf") else 0,
                 max_drawdown=max_dd,
             )
 
@@ -209,7 +212,13 @@ class PortfolioManager:
     def get_trade_history(self, limit: int = 100, offset: int = 0) -> List[Dict]:
         """İşlem geçmişi"""
         with get_session() as session:
-            trades = session.query(DBTrade).order_by(DBTrade.timestamp.desc()).offset(offset).limit(limit).all()
+            trades = (
+                session.query(DBTrade)
+                .order_by(DBTrade.timestamp.desc())
+                .offset(offset)
+                .limit(limit)
+                .all()
+            )
 
             result = []
             for trade in trades:
@@ -219,24 +228,27 @@ class PortfolioManager:
                 token_sym = "N/A"
                 if pos and pos.token_id:
                     from shared.models import Token as DBToken
+
                     tok = session.query(DBToken).filter(DBToken.id == pos.token_id).first()
                     if tok:
                         token_sym = tok.symbol
 
-                result.append({
-                    "id": trade.id,
-                    "timestamp": trade.timestamp.isoformat(),
-                    "symbol": token_sym,
-                    "inst_id": trade.inst_id,
-                    "side": trade.side,
-                    "price": trade.price,
-                    "quantity": trade.quantity,
-                    "fee": trade.fee,
-                    "is_take_profit": trade.is_take_profit,
-                    "is_stop_loss": trade.is_stop_loss,
-                    "is_trailing_stop": trade.is_trailing_stop,
-                    "tp_tier_index": trade.tp_tier_index,
-                })
+                result.append(
+                    {
+                        "id": trade.id,
+                        "timestamp": trade.timestamp.isoformat(),
+                        "symbol": token_sym,
+                        "inst_id": trade.inst_id,
+                        "side": trade.side,
+                        "price": trade.price,
+                        "quantity": trade.quantity,
+                        "fee": trade.fee,
+                        "is_take_profit": trade.is_take_profit,
+                        "is_stop_loss": trade.is_stop_loss,
+                        "is_trailing_stop": trade.is_trailing_stop,
+                        "tp_tier_index": trade.tp_tier_index,
+                    }
+                )
             return result
 
     def get_open_positions_summary(self) -> List[Dict]:
@@ -278,9 +290,12 @@ class PortfolioManager:
         """Eğri verisi (son N saat)"""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
         with get_session() as session:
-            metrics = session.query(SystemMetrics).filter(
-                SystemMetrics.timestamp >= cutoff
-            ).order_by(SystemMetrics.timestamp.asc()).all()
+            metrics = (
+                session.query(SystemMetrics)
+                .filter(SystemMetrics.timestamp >= cutoff)
+                .order_by(SystemMetrics.timestamp.asc())
+                .all()
+            )
 
             return [
                 {

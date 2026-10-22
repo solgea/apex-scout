@@ -23,6 +23,7 @@ log = get_logger(__name__)
 @dataclass
 class RecoveryState:
     """Kurtarma durumu"""
+
     last_save: datetime = field(default_factory=datetime.utcnow)
     orchestrator_stats: Dict = field(default_factory=dict)
     open_positions: list = field(default_factory=list)
@@ -111,13 +112,15 @@ class RecoveryManager:
             temp_file.replace(self._state_file)
 
             # Backup da al (her 10 kaydetmede bir)
-            if hasattr(self, '_save_count'):
+            if hasattr(self, "_save_count"):
                 self._save_count += 1
             else:
                 self._save_count = 1
 
             if self._save_count % 10 == 0:
-                backup_file = self._backup_dir / f"state_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+                backup_file = (
+                    self._backup_dir / f"state_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+                )
                 with open(backup_file, "w") as f:
                     json.dump(data, f, indent=2, default=str)
                 # Eski backup'ları temizle (son 20)
@@ -167,14 +170,18 @@ class RecoveryManager:
         """Açık pozisyonları DB ile doğrula"""
         try:
             with get_session() as session:
-                db_positions = session.query(DBPosition).filter(
-                    DBPosition.status.in_([PositionStatus.OPEN, PositionStatus.PARTIAL])
-                ).all()
+                db_positions = (
+                    session.query(DBPosition)
+                    .filter(DBPosition.status.in_([PositionStatus.OPEN, PositionStatus.PARTIAL]))
+                    .all()
+                )
 
                 log.info(f"[Recovery] Found {len(db_positions)} open positions in DB")
 
                 for db_pos in db_positions:
-                    log.debug(f"  - {db_pos.okx_inst_id}: {db_pos.status} PnL={db_pos.unrealized_pnl:.2f}")
+                    log.debug(
+                        f"  - {db_pos.okx_inst_id}: {db_pos.status} PnL={db_pos.unrealized_pnl:.2f}"
+                    )
 
         except Exception as e:
             log.error(f"[Recovery] Position validation failed: {e}")

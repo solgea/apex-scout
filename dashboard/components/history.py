@@ -28,14 +28,14 @@ def render_history(trades: list):
             "Tür",
             ["Normal", "Take Profit", "Stop Loss", "Trailing Stop"],
             default=["Normal", "Take Profit", "Stop Loss", "Trailing Stop"],
-            key="hist_type"
+            key="hist_type",
         )
     with col3:
         days = st.selectbox("Son", [1, 3, 7, 30, 90], index=2, key="hist_days")
     with col4:
         if st.button("📥 CSV İndir", use_container_width=True):
             df = pd.DataFrame(trades)
-            csv = df.to_csv(index=False).encode('utf-8')
+            csv = df.to_csv(index=False).encode("utf-8")
             st.download_button(
                 "CSV Kaydet",
                 csv,
@@ -74,17 +74,21 @@ def render_history(trades: list):
     df_data = []
     for t in filtered:
         pnl_est = 0  # Basit tahmin
-        df_data.append({
-            "Zaman": t["timestamp"].strftime("%m/%d %H:%M:%S") if t["timestamp"] else "N/A",
-            "Sembol": t["symbol"],
-            "Yön": "🟢 AL" if t["side"] == "buy" else "🔴 SAT",
-            "Tür": t["trade_type"],
-            "Fiyat": f"${t['price']:.6f}",
-            "Miktar": f"{t['quantity']:.6f}",
-            "Değer": f"${t['price'] * t['quantity']:,.2f}",
-            "Komisyon": f"${t['fee']:.4f}",
-            "TP Kademe": f"TP{t['tp_tier_index']+1}" if t.get("tp_tier_index") is not None else "-",
-        })
+        df_data.append(
+            {
+                "Zaman": t["timestamp"].strftime("%m/%d %H:%M:%S") if t["timestamp"] else "N/A",
+                "Sembol": t["symbol"],
+                "Yön": "🟢 AL" if t["side"] == "buy" else "🔴 SAT",
+                "Tür": t["trade_type"],
+                "Fiyat": f"${t['price']:.6f}",
+                "Miktar": f"{t['quantity']:.6f}",
+                "Değer": f"${t['price'] * t['quantity']:,.2f}",
+                "Komisyon": f"${t['fee']:.4f}",
+                "TP Kademe": (
+                    f"TP{t['tp_tier_index']+1}" if t.get("tp_tier_index") is not None else "-"
+                ),
+            }
+        )
 
     if df_data:
         df = pd.DataFrame(df_data)

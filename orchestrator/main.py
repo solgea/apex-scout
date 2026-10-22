@@ -33,6 +33,7 @@ log = get_logger(__name__)
 @dataclass
 class OrchestratorStats:
     """Orchestrator istatistikleri"""
+
     cycles_completed: int = 0
     cycles_failed: int = 0
     tokens_scanned: int = 0
@@ -133,7 +134,9 @@ class Orchestrator:
 
         self._risk_manager = RiskManager()
         self._position_manager = PositionManager(self._risk_manager)
-        self._order_executor = OrderExecutor(self._okx_client, self._position_manager, self._risk_manager)
+        self._order_executor = OrderExecutor(
+            self._okx_client, self._position_manager, self._risk_manager
+        )
         self._portfolio = PortfolioManager(self._okx_client, self._position_manager)
 
         # DB'den açık pozisyonları yükle
@@ -248,7 +251,9 @@ class Orchestrator:
         self.stats.decisions_watch += len(watch_tokens)
         self.stats.decisions_skip += len([d for d in decisions if d.action == DecisionAction.SKIP])
 
-        log.info(f"Decisions: PASS={len(pass_tokens)}, WATCH={len(watch_tokens)}, SKIP={self.stats.decisions_skip}")
+        log.info(
+            f"Decisions: PASS={len(pass_tokens)}, WATCH={len(watch_tokens)}, SKIP={self.stats.decisions_skip}"
+        )
 
         # 3. TRADE - PASS token'ları için işlem aç
         if pass_tokens:
@@ -315,7 +320,9 @@ class Orchestrator:
         with get_session() as session:
             for result in results.results:
                 # Token'ı kaydet/güncelle
-                db_token = session.query(Token).filter(Token.address == result.token.address).first()
+                db_token = (
+                    session.query(Token).filter(Token.address == result.token.address).first()
+                )
                 if not db_token:
                     db_token = Token(
                         address=result.token.address,
@@ -413,18 +420,28 @@ class Orchestrator:
                     portfolio_snapshot.total_value_usd,
                 )
                 if not risk_check.allowed:
-                    log.warning(f"Portfolio risk limit, skipping {token.symbol}: {risk_check.reason}")
+                    log.warning(
+                        f"Portfolio risk limit, skipping {token.symbol}: {risk_check.reason}"
+                    )
                     continue
 
                 # Pozisyon boyutu kontrolü
-                risk_check = self._risk_manager.check_position_size(position_value, portfolio_snapshot.available_balance)
+                risk_check = self._risk_manager.check_position_size(
+                    position_value, portfolio_snapshot.available_balance
+                )
                 if not risk_check.allowed:
-                    log.warning(f"Position size limit, skipping {token.symbol}: {risk_check.reason}")
+                    log.warning(
+                        f"Position size limit, skipping {token.symbol}: {risk_check.reason}"
+                    )
                     continue
 
                 # SL/TP hesapla
-                sl_price = self._risk_manager.create_stop_loss_price(current_price, DecisionAction.PASS)  # BUY side
-                tp_tiers = self._risk_manager.create_take_profit_tiers(current_price, DecisionAction.PASS)
+                sl_price = self._risk_manager.create_stop_loss_price(
+                    current_price, DecisionAction.PASS
+                )  # BUY side
+                tp_tiers = self._risk_manager.create_take_profit_tiers(
+                    current_price, DecisionAction.PASS
+                )
 
                 # TP tiers'ları dict formatına çevir
                 tp_tiers_dict = [
@@ -444,15 +461,19 @@ class Orchestrator:
                     fill_qty = order.filled_size
 
                     # SL/TP fiyatlarını fill price'a göre yeniden hesapla
-                    sl_price = self._risk_manager.create_stop_loss_price(fill_price, DecisionAction.PASS)
-                    tp_tiers = self._risk_manager.create_take_profit_tiers(fill_price, DecisionAction.PASS)
+                    sl_price = self._risk_manager.create_stop_loss_price(
+                        fill_price, DecisionAction.PASS
+                    )
+                    tp_tiers = self._risk_manager.create_take_profit_tiers(
+                        fill_price, DecisionAction.PASS
+                    )
                     tp_tiers_dict = [
                         {"profit_pct": t.profit_pct, "sell_pct": t.sell_pct, "triggered": False}
                         for t in tp_tiers
                     ]
 
                     position = self._position_manager.create_position(
-                        token_id=decision.token.id if hasattr(decision.token, 'id') else None,
+                        token_id=decision.token.id if hasattr(decision.token, "id") else None,
                         inst_id=inst_id,
                         side=DecisionAction.PASS,  # BUY
                         entry_price=fill_price,
@@ -505,7 +526,9 @@ class Orchestrator:
                 continue
 
             # Risk manager'dan çıkış koşullarını kontrol et
-            action, trigger_price, tp_tier = self._risk_manager.check_exit_conditions(position, current_price)
+            action, trigger_price, tp_tier = self._risk_manager.check_exit_conditions(
+                position, current_price
+            )
 
             if action == "STOP_LOSS":
                 await self._handle_stop_loss(position, trigger_price)
@@ -540,8 +563,11 @@ class Orchestrator:
                 if position.token_id:
                     from shared.database import get_session
                     from shared.models import Token as DBToken
+
                     with get_session() as session:
-                        token = session.query(DBToken).filter(DBToken.id == position.token_id).first()
+                        token = (
+                            session.query(DBToken).filter(DBToken.id == position.token_id).first()
+                        )
                         if token:
                             self._blacklist.add(token.address, token.symbol, "STOP_LOSS_HIT")
 
@@ -553,7 +579,9 @@ class Orchestrator:
         sell_pct = tier["sell_pct"]
         sell_qty = position.quantity * (sell_pct / 100)
 
-        log.info(f"TAKE PROFIT TP{tp_tier_index+1} triggered for {position.inst_id} at {trigger_price:.6f}, selling {sell_pct}%")
+        log.info(
+            f"TAKE PROFIT TP{tp_tier_index+1} triggered for {position.inst_id} at {trigger_price:.6f}, selling {sell_pct}%"
+        )
 
         order = await self._order_executor.execute_market_sell(
             inst_id=position.inst_id,
@@ -631,7 +659,9 @@ class Orchestrator:
                 decisions_skip=delta_skip,
                 trades_executed=delta_trades,
                 trades_failed=0,
-                positions_opened=len([p for p in open_positions if p.status == PositionStatus.OPEN]),
+                positions_opened=len(
+                    [p for p in open_positions if p.status == PositionStatus.OPEN]
+                ),
                 positions_closed=0,
                 errors_count=delta_errors,
                 api_latency_ms=0,  # TODO: measure
@@ -682,12 +712,20 @@ class Orchestrator:
                 "decisions_skip": self.stats.decisions_skip,
                 "trades_executed": self.stats.trades_executed,
                 "errors": self.stats.errors,
-                "last_cycle_time": self.stats.last_cycle_time.isoformat() if self.stats.last_cycle_time else None,
+                "last_cycle_time": (
+                    self.stats.last_cycle_time.isoformat() if self.stats.last_cycle_time else None
+                ),
                 "last_cycle_duration_ms": self.stats.last_cycle_duration_ms,
                 "uptime_seconds": (datetime.utcnow() - self.stats.start_time).total_seconds(),
             },
             "positions": {
-                "open": self._position_manager.get_open_position_count() if self._position_manager else 0,
-                "total": self._position_manager.get_position_count() if self._position_manager else 0,
+                "open": (
+                    self._position_manager.get_open_position_count()
+                    if self._position_manager
+                    else 0
+                ),
+                "total": (
+                    self._position_manager.get_position_count() if self._position_manager else 0
+                ),
             },
         }
